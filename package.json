@@ -1,0 +1,61 @@
+{
+  "name": "sisense-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Sisense integration supporting SSE protocol",
+  "type": "module",
+  "main": "dist/sse-server.js",
+  "bin": {
+    "sisense-mcp-server": "dist/sse-server.js"
+  },
+  "scripts": {
+    "build": "bun build src/sse-server.ts --outdir dist --target node --format esm",
+    "dev": "bun run --watch src/sse-server.ts",
+    "start": "bun run dist/sse-server.js",
+    "test": "bun test",
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "postinstall": "playwright install chromium"
+  },
+  "keywords": [
+    "mcp",
+    "sisense",
+    "model-context-protocol"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@playwright/experimental-ct-react": "^1.56.1",
+    "@playwright/test": "^1.56.1",
+    "@sisense/sdk-ai-core": "^0.3.0",
+    "@sisense/sdk-data": "^2.16.0",
+    "@sisense/sdk-ui": "^2.16.0",
+    "playwright": "^1.56.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.0.0",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sisense/sisense-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sisense/sisense-mcp-server/issues"
+  },
+  "homepage": "https://github.com/sisense/sisense-mcp-server#readme"
+}

@@ -1,0 +1,38 @@
+default:
+  image: quay.io/sisense/sisense-dev-node:22
+  interruptible: true
+  tags:
+    - k8s
+
+stages:
+  - build
+  - github-release
+
+build:
+  stage: build
+  before_script:
+    - curl -fsSL https://bun.sh/install | bash
+    - export BUN_INSTALL="$HOME/.bun"
+    - export PATH="$BUN_INSTALL/bin:$PATH"
+  script:
+    - bun install
+    - bun lint
+    - bun format:check
+    - bun type-check
+    - bun build src/sse-server.ts --outdir dist --target node --format esm
+
+github-release:
+  stage: github-release
+  image: node:20-alpine
+  when: manual
+  variables:
+    GITHUB_TARGET_BRANCH: main
+    GITHUB_URL: git@github.com:sisense/sisense-mcp-server.git
+    GIT_USER_EMAIL: ci-bot@sisense.com
+    GIT_USER_NAME: Sisense CI Bot
+  before_script:
+    - apk add --no-cache git rsync openssh-client bash
+  script:
+    - 'bash ./ci/sync-to-github.sh "chore: sync sisense-mcp-server ($CI_COMMIT_SHORT_SHA)"'
+  needs:
+    - build

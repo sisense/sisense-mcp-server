@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+.vscode/
+.idea/
+
+# Playwright CT
+playwright/.cache/
+
+# Screenshots
+__screenshots__/
