@@ -1,12 +1,17 @@
 import type { GetDataSourceFieldsContext } from '@sisense/sdk-ai-core';
+import type { HttpClient } from '@sisense/sdk-rest-client';
 import { z } from 'zod';
+import type { SessionState } from '../types/sessions.js';
 
 export const getDataSourceFieldsOutputSchema = {
   dataSourceTitle: z.string(),
   fields: z.array(z.any()),
 };
 
-export async function getDataSourceFields(args: { dataSourceTitle: string }) {
+export async function getDataSourceFields(
+  args: { dataSourceTitle: string },
+  sessionState?: SessionState,
+) {
   const { dataSourceTitle } = args;
 
   try {
@@ -14,9 +19,9 @@ export async function getDataSourceFields(args: { dataSourceTitle: string }) {
 
     const getDataSourceFieldsContext: GetDataSourceFieldsContext = {
       toolCallId: 'get-data-source-fields',
+      httpClient: sessionState?.get('httpClient') as HttpClient | undefined,
     };
 
-    // call the data source fields engine
     const result = await getDataSourceFieldsEngine({ dataSourceTitle }, getDataSourceFieldsContext);
 
     return {

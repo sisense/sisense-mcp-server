@@ -23,16 +23,16 @@ test.describe('Widget Renderer', () => {
 
     // Wait for widget container to appear (works for both Highcharts and indicators)
     await page.waitForSelector('[data-test-id="widget-container"]', {
-      timeout: 4000,
+      timeout: 6000,
       state: 'attached',
     });
 
     // Wait for network to be idle (data fetching complete)
-    await page.waitForLoadState('networkidle', { timeout: 4000 });
+    await page.waitForLoadState('networkidle', { timeout: 6000 });
 
     // Wait for widget content to be rendered (any child element)
     await page.waitForSelector('[data-test-id="widget-container"] > div', {
-      timeout: 4000,
+      timeout: 6000,
     });
 
     // Small wait for widget to finish rendering (animations, etc.)

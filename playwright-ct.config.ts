@@ -28,6 +28,8 @@ export default defineConfig({
         viewport: { width: 1280, height: 720 },
         // Aggressive browser args for faster rendering
         launchOptions: {
+          // Use system Chromium if PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set (Docker)
+          executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',

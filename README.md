@@ -4,14 +4,14 @@ A Model Context Protocol (MCP) server that provides integration with Sisense ana
 
 ## Features
 
-- **Transport Support**: Streamable SSE (for HTTP-based clients)
+- **Transport Support**: Streamable HTTP/SSE (for HTTP-based clients like Claude Desktop)
 - **Three MCP Tools**:
   - `getDataSources`: Retrieve Sisense data sources (or data models)
-  - `getDataSourceFields`: List all available fields for a specific data source (or data model) from Sisense
-  - `buildChart`: Build charts for a Sisense data source from natural language prompts
-- **Authentication**: Token-based authentication via environment variables
+  - `getDataSourceFields`: List all available fields for a specific data source
+  - `buildChart`: Build charts from natural language prompts
+- **Per-Session Authentication**: Sisense credentials passed via URL parameters
 - **TypeScript**: Full type safety and modern ESM support
-- **Lightweight**: Pure Node.js HTTP server for SSE transport, no heavy frameworks
+- **Lightweight**: Pure Node.js HTTP server, no heavy frameworks
 - **Fast**: Optimized for Bun runtime, also runs on Node.js
 
 ## Prerequisites
@@ -22,57 +22,59 @@ A Model Context Protocol (MCP) server that provides integration with Sisense ana
 
 ## Installation
 
-**With Bun (recommended):**
-
 ```bash
 bun install
 ```
 
-**With Node.js:**
+## Usage
+
+Start the server:
 
 ```bash
-npm install
+bun run dev
+```
+
+The server will display the connection URL:
+
+```
+Sisense MCP Server running on http://localhost:3000
+
+Connect with:
+  http://localhost:3000/mcp?sisenseUrl=<SISENSE_URL>&sisenseToken=<SISENSE_TOKEN>
+
+Endpoints:
+  Health: http://localhost:3000/health
+  Screenshots: http://localhost:3000/screenshots/
+```
+
+### Connecting from Claude Desktop
+
+Configure Claude Desktop to connect using the full URL with your Sisense credentials:
+
+```
+http://localhost:3000/mcp?sisenseUrl=https://your-instance.sisense.com&sisenseToken=your-api-token
+```
+
+Or via ngrok/public URL:
+
+```
+https://your-ngrok-url.ngrok-free.app/mcp?sisenseUrl=https://your-instance.sisense.com&sisenseToken=your-api-token
 ```
 
 ## Configuration
 
-Create a `.env` file in the project root:
+| Parameter | Description |
+|-----------|-------------|
+| `sisenseUrl` | Full URL to your Sisense instance (e.g., `https://instance.sisense.com`) |
+| `sisenseToken` | Sisense API authentication token |
+| `PORT` | (Optional) Server port, defaults to 3000 |
 
-```bash
-SISENSE_URL=https://your-instance.sisense.com
-SISENSE_TOKEN=your-api-token-here
-PORT=3000  # Optional, for SSE server
-```
-
-## Usage
-
-**With Bun:**
-
-```bash
-bun run dev
-# Or after building:
-bun run start
-```
-
-**With Node.js:**
-
-```bash
-node src/sse-server.ts
-# Or after building:
-node dist/sse-server.js
-```
-
-The SSE server will be available at `http://localhost:3000/mcp`
+The server automatically derives its public base URL from request headers, so it works correctly behind proxies like ngrok.
 
 ## Development
 
-**With Bun:**
-
 ```bash
-# Run in development mode with hot reload
-bun run dev
-
-# Run SSE server in development
+# Run server in development mode with hot reload
 bun run dev
 
 # Build the project
@@ -86,26 +88,4 @@ bun run type-check
 
 # Lint
 bun run lint
-```
-
-**With Node.js:**
-
-```bash
-# Run in development mode
-npm run dev
-
-# Run SSE server in development
-npm run dev:sse
-
-# Build the project
-npm run build
-
-# Run tests
-npm test
-
-# Type checking
-npm run type-check
-
-# Lint
-npm run lint
 ```

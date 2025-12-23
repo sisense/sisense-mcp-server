@@ -1,3 +1,23 @@
+# =============================================================================
+# Required CI/CD Variables (Settings > CI/CD > Variables):
+# -----------------------------------------------------------------------------
+# AWS_ACCOUNT_ID          - AWS account ID (e.g., 117584754501)
+#                           Find: AWS Console > Account ID in top-right dropdown
+# AWS_ACCESS_KEY_ID       - CI user access key from Secrets Manager
+#                           Retrieve: aws secretsmanager get-secret-value --secret-id sisense-mcp-server/ci-credentials
+# AWS_SECRET_ACCESS_KEY   - CI user secret key from Secrets Manager
+#                           Retrieve: aws secretsmanager get-secret-value --secret-id sisense-mcp-server/ci-credentials
+# APP_RUNNER_SERVICE_ARN  - App Runner service ARN from CDK stack output
+#                           Find: AWS Console > App Runner > Service > ARN
+# GITHUB_DEPLOY_KEY       - File variable containing OpenSSH private key for GitHub
+#                           Required for github-release job
+#                           Generate: ssh-keygen -t ed25519 -C "ci-bot@sisense.com"
+#                           Add public key to GitHub repo deploy keys
+# GITHUB_KNOWN_HOSTS      - File variable containing GitHub SSH host keys
+#                           Required for github-release job
+#                           Retrieve: ssh-keyscan github.com
+# =============================================================================
+
 default:
   image: quay.io/sisense/sisense-dev-node:22
   interruptible: true
@@ -6,7 +26,15 @@ default:
 
 stages:
   - build
+  - docker
   - github-release
+
+variables:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+  IMAGE_NAME: sisense-mcp-server
+
+# Lint, type-check, and build
 
 build:
   stage: build
@@ -21,6 +49,51 @@ build:
     - bun type-check
     - bun build src/sse-server.ts --outdir dist --target node --format esm
 
+# Build and push Docker image
+docker:
+  stage: docker
+  image: docker:latest
+  services:
+    - name: docker:dind
+      command: ["--tls=false"]
+  variables:
+    # Docker-in-Docker configuration for Kubernetes runners
+    # Disable TLS - certs don't mount properly in ephemeral k8s pods
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    # Unset DOCKER_AUTH_CONFIG (set at group level) to use CLI auth
+    DOCKER_AUTH_CONFIG: ""
+  before_script:
+    - apk add --no-cache aws-cli
+  script:
+    # Fail fast if credentials not set
+    - |
+      if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+        echo "ERROR: AWS credentials not configured."
+        echo "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in CI/CD variables."
+        echo "Retrieve from: aws secretsmanager get-secret-value --secret-id sisense-mcp-server/ci-credentials"
+        exit 1
+      fi
+    - |
+      if [ -z "$AWS_ACCOUNT_ID" ]; then
+        echo "ERROR: AWS_ACCOUNT_ID not set in CI/CD variables."
+        exit 1
+      fi
+    # ECR login with error checking
+    - |
+      echo "Authenticating with ECR..."
+      if ! aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY; then
+        echo "ERROR: ECR authentication failed. Check AWS credentials."
+        exit 1
+      fi
+      echo "ECR authentication successful"
+    # Build and push
+    - docker build --platform linux/amd64 -t $ECR_REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHA -t $ECR_REGISTRY/$IMAGE_NAME:latest .
+    - docker push $ECR_REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHA
+    - docker push $ECR_REGISTRY/$IMAGE_NAME:latest
+  only:
+    - main
+
 github-release:
   stage: github-release
   image: node:20-alpine
@@ -33,6 +106,22 @@ github-release:
   before_script:
     - apk add --no-cache git rsync openssh-client bash
   script:
+    # Fail fast if SSH key variables not set
+    - |
+      if [ -z "$GITHUB_DEPLOY_KEY" ]; then
+        echo "ERROR: GITHUB_DEPLOY_KEY not configured."
+        echo "Set GITHUB_DEPLOY_KEY as a file variable in CI/CD variables."
+        echo "Generate: ssh-keygen -t ed25519 -C \"ci-bot@sisense.com\""
+        echo "Add public key to GitHub repo deploy keys"
+        exit 1
+      fi
+    - |
+      if [ -z "$GITHUB_KNOWN_HOSTS" ]; then
+        echo "ERROR: GITHUB_KNOWN_HOSTS not configured."
+        echo "Set GITHUB_KNOWN_HOSTS as a file variable in CI/CD variables."
+        echo "Retrieve: ssh-keyscan github.com"
+        exit 1
+      fi
     - 'bash ./ci/sync-to-github.sh "chore: sync sisense-mcp-server ($CI_COMMIT_SHORT_SHA)"'
   needs:
     - build

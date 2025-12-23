@@ -12,10 +12,11 @@
     "dev": "bun run --watch src/sse-server.ts",
     "start": "bun run dist/sse-server.js",
     "test": "bun test",
+    "test:e2e": "bun test e2e",
     "lint": "eslint src/**/*.ts",
     "type-check": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"e2e/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"e2e/**/*.{ts,tsx}\"",
     "postinstall": "playwright install chromium"
   },
   "keywords": [
@@ -24,12 +25,14 @@
     "model-context-protocol"
   ],
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.756.0",
+    "@aws-sdk/s3-request-presigner": "^3.756.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@playwright/experimental-ct-react": "^1.56.1",
     "@playwright/test": "^1.56.1",
-    "@sisense/sdk-ai-core": "^0.3.0",
-    "@sisense/sdk-data": "^2.16.0",
-    "@sisense/sdk-ui": "^2.16.0",
+    "@sisense/sdk-ai-core": "0.4.1",
+    "@sisense/sdk-data": "2.17.0",
+    "@sisense/sdk-ui": "2.17.0",
     "playwright": "^1.56.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

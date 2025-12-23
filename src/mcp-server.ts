@@ -5,6 +5,7 @@ import {
   getDataSourceFields,
   getDataSourceFieldsOutputSchema,
 } from './tools/get-data-source-fields.js';
+import { registerPrompts } from './prompts/index.js';
 import type { SessionState } from './types/sessions.js';
 
 export async function setupMcpServer(sessionState?: SessionState): Promise<McpServer> {
@@ -32,7 +33,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
         outputSchema: getDataSourcesOutputSchema,
       },
       async (args) => {
-        return await getDataSources(args);
+        return await getDataSources(args, sessionState);
       },
     );
 
@@ -46,7 +47,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
         outputSchema: getDataSourceFieldsOutputSchema,
       },
       async (args) => {
-        return await getDataSourceFields(args);
+        return await getDataSourceFields(args, sessionState);
       },
     );
 
@@ -63,6 +64,9 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
         return await buildChart(args, sessionState, extra.requestId);
       },
     );
+
+    // Register prompts for guided workflows
+    registerPrompts(server);
 
     return server;
   } catch (error) {

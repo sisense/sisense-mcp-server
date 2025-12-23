@@ -1,8 +1,13 @@
 import { readFileSync } from 'node:fs';
-import { type ChartWidgetProps } from '@sisense/sdk-ui';
-import { getSisenseContextProviderProps } from '@/initialize-sisense-clients.js';
-import { normalizeUrl } from '@sisense/sdk-ai-core';
+import { basename } from 'node:path';
+import { type ChartWidgetProps, type SisenseContextProviderProps } from '@sisense/sdk-ui';
 import { renderChartWidgetWithPlaywrightCT } from './widget-ct-runner.js';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+// S3 client for uploading screenshots (shared across instances)
+const s3Client = process.env.SCREENSHOTS_BUCKET
+  ? new S3Client({ region: process.env.AWS_REGION || 'us-east-1' })
+  : null;
 
 /**
  * Render a chart from WidgetProps using Playwright Component Testing
@@ -14,10 +19,26 @@ export async function renderChartWidget(args: {
   height?: number;
   outputName?: string;
   maxRetries?: number;
+  sisenseUrl: string;
+  sisenseToken: string;
+  baseUrl: string;
 }) {
-  const { widgetProps, width = 800, height = 500, outputName, maxRetries = 2 } = args;
+  const {
+    widgetProps,
+    width = 800,
+    height = 500,
+    outputName,
+    maxRetries = 2,
+    sisenseUrl,
+    sisenseToken,
+    baseUrl,
+  } = args;
 
-  const sisenseContextProviderProps = getSisenseContextProviderProps();
+  const sisenseContextProviderProps: SisenseContextProviderProps = {
+    url: sisenseUrl,
+    token: sisenseToken,
+    showRuntimeErrors: true,
+  };
 
   console.info('Rendering chart from WidgetProps', {
     chartType: widgetProps.chartType,
@@ -51,20 +72,52 @@ export async function renderChartWidget(args: {
         path: result.pngPath,
       });
 
+      if (!result.pngPath) {
+        throw new Error('Widget rendering succeeded but no output path was returned');
+      }
+
       const imageBuffer = readFileSync(result.pngPath);
-      const base64Image = imageBuffer.toString('base64');
+
+      // Extract filename using path.basename for cross-platform compatibility
+      const filename = basename(result.pngPath);
+      if (!filename) {
+        throw new Error(`Invalid screenshot path: ${result.pngPath}`);
+      }
+
+      // Upload to S3 if configured (for multi-instance support)
+      if (s3Client && process.env.SCREENSHOTS_BUCKET) {
+        const bucket = process.env.SCREENSHOTS_BUCKET;
+        try {
+          await s3Client.send(
+            new PutObjectCommand({
+              Bucket: bucket,
+              Key: filename,
+              Body: imageBuffer,
+              ContentType: 'image/png',
+            }),
+          );
+          console.info('Screenshot uploaded to S3', { bucket, filename });
+        } catch (s3Error) {
+          console.error('Failed to upload screenshot to S3', {
+            bucket,
+            filename,
+            error: s3Error instanceof Error ? s3Error.message : String(s3Error),
+          });
+          throw new Error(
+            `S3 upload failed: ${s3Error instanceof Error ? s3Error.message : String(s3Error)}`,
+          );
+        }
+      }
+
+      // Always return the proxy URL - server handles S3 or local fallback
+      const publicUrl = `${baseUrl.replace(/\/$/, '')}/screenshots/${filename}`;
 
       console.info('Widget rendered successfully', {
         outputPath: result.pngPath,
         imageSize: imageBuffer.length,
+        publicUrl,
         timings: result.timings,
       });
-
-      // Extract filename from path for public URL
-      const filename = result.pngPath.split('/').pop();
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-      const publicUrl = normalizeUrl(`${baseUrl}/screenshots/${filename}`);
-      const resourceUri = `sisense://charts/${filename}`;
 
       const toolResult = {
         content: [
@@ -77,11 +130,7 @@ export async function renderChartWidget(args: {
 
       console.info('>>> CHART TOOL RESULT', {
         contentCount: toolResult.content.length,
-        contentTypes: toolResult.content.map((c) => c.type),
-        resourceUri: resourceUri,
-        publicUrl: publicUrl,
-        base64Length: base64Image.length,
-        resultJson: JSON.stringify(toolResult).substring(0, 500),
+        publicUrl,
       });
 
       return toolResult;

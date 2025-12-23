@@ -1,19 +1,21 @@
 import type { GetDataSourcesContext } from '@sisense/sdk-ai-core';
+import type { HttpClient } from '@sisense/sdk-rest-client';
 import { z } from 'zod';
+import type { SessionState } from '../types/sessions.js';
 
 export const getDataSourcesOutputSchema = {
   dataSources: z.array(z.any()),
 };
 
-export async function getDataSources(_args: object) {
+export async function getDataSources(_args: object, sessionState?: SessionState) {
   try {
     const { getDataSourcesEngine } = await import('@sisense/sdk-ai-core');
 
     const getDataSourcesContext: GetDataSourcesContext = {
       toolCallId: 'get-data-sources',
+      httpClient: sessionState?.get('httpClient') as HttpClient | undefined,
     };
 
-    // call the data sources engine
     const result = await getDataSourcesEngine({}, getDataSourcesContext);
 
     return {
