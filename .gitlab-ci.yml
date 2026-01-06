@@ -39,7 +39,7 @@ variables:
 build:
   stage: build
   before_script:
-    - curl -fsSL https://bun.sh/install | bash
+    - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.5"
     - export BUN_INSTALL="$HOME/.bun"
     - export PATH="$BUN_INSTALL/bin:$PATH"
   script:
@@ -47,7 +47,7 @@ build:
     - bun lint
     - bun format:check
     - bun type-check
-    - bun build src/sse-server.ts --outdir dist --target node --format esm
+    - bun run build
 
 # Build and push Docker image
 docker:

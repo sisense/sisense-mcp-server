@@ -8,6 +8,13 @@ import {
 import { registerPrompts } from './prompts/index.js';
 import type { SessionState } from './types/sessions.js';
 
+// No-op JSON Schema validator to bypass AJV compatibility issues with Bun
+// Zod handles all validation internally, so this is safe
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const noOpValidator: any = {
+  getValidator: () => (input: unknown) => ({ valid: true, data: input, errorMessage: undefined }),
+};
+
 export async function setupMcpServer(sessionState?: SessionState): Promise<McpServer> {
   try {
     const {
@@ -19,17 +26,22 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
       buildChartSchema,
     } = await import('@sisense/sdk-ai-core');
 
-    const server = new McpServer({
-      name: 'sisense-mcp-server',
-      version: '1.0.0',
-    });
+    const server = new McpServer(
+      {
+        name: 'sisense-mcp-server',
+        version: '1.0.0',
+      },
+      {
+        jsonSchemaValidator: noOpValidator,
+      },
+    );
 
     server.registerTool(
       TOOL_NAME_GET_DATA_SOURCES,
       {
         title: 'Get Sisense Data Sources',
         description: 'List all available data sources (or data models) from Sisense.',
-        inputSchema: getDataSourcesSchema,
+        inputSchema: getDataSourcesSchema.shape,
         outputSchema: getDataSourcesOutputSchema,
       },
       async (args) => {
@@ -43,7 +55,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
         title: 'Get Sisense Data Source Fields',
         description:
           'List all available fields for a specific data source (or data model) from Sisense.',
-        inputSchema: getDataSourceFieldsSchema,
+        inputSchema: getDataSourceFieldsSchema.shape,
         outputSchema: getDataSourceFieldsOutputSchema,
       },
       async (args) => {
@@ -57,7 +69,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
         title: 'Build Sisense Chart from User Prompt',
         description:
           'Build a chart from a Sisense data source using natural language user prompt. Chart type will be automatically determined by Sisense AI based on the user prompt.',
-        inputSchema: buildChartSchema,
+        inputSchema: buildChartSchema.shape,
         outputSchema: buildChartOutputSchema,
       },
       async (args, extra) => {

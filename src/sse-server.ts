@@ -5,14 +5,24 @@ import { resolve, sep } from 'node:path';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { fromTokenFile } from '@aws-sdk/credential-provider-web-identity';
 import { initializeSisenseClients } from './initialize-sisense-clients.js';
 import type { SessionState } from './types/sessions.js';
 import { setupMcpServer } from './mcp-server.js';
 
 // S3 client for proxying screenshots (if configured)
-const s3Client = process.env.SCREENSHOTS_BUCKET
-  ? new S3Client({ region: process.env.AWS_REGION || 'us-east-1' })
-  : null;
+function createS3Client(): S3Client | null {
+  if (!process.env.SCREENSHOTS_BUCKET) {
+    return null;
+  }
+  const region = process.env.AWS_REGION || 'us-east-1';
+  // Use web identity credentials in App Runner
+  if (process.env.AWS_WEB_IDENTITY_TOKEN_FILE) {
+    return new S3Client({ region, credentials: fromTokenFile() });
+  }
+  return new S3Client({ region });
+}
+const s3Client = createS3Client();
 
 const PORT = process.env.PORT || 3000;
 

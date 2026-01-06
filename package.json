@@ -8,7 +8,7 @@
     "sisense-mcp-server": "dist/sse-server.js"
   },
   "scripts": {
-    "build": "bun build src/sse-server.ts --outdir dist --target node --format esm",
+    "build": "bun build src/sse-server.ts --outdir dist --target node --format esm --splitting",
     "dev": "bun run --watch src/sse-server.ts",
     "start": "bun run dist/sse-server.js",
     "test": "bun test",
