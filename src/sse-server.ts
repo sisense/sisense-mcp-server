@@ -9,6 +9,7 @@ import { fromTokenFile } from '@aws-sdk/credential-provider-web-identity';
 import { initializeSisenseClients } from './initialize-sisense-clients.js';
 import type { SessionState } from './types/sessions.js';
 import { setupMcpServer } from './mcp-server.js';
+import { sanitizeError, validateUrl, validateToken } from './utils/string-utils.js';
 
 // S3 client for proxying screenshots (if configured)
 function createS3Client(): S3Client | null {
@@ -102,7 +103,11 @@ const server = createServer(async (req, res) => {
       });
       res.end(imageBuffer);
     } catch (error) {
-      console.error('Error serving screenshot:', error);
+      const sanitized = sanitizeError(error, true);
+      console.error('Error serving screenshot:', sanitized.message);
+      if (sanitized.stack) {
+        console.error('Stack trace:', sanitized.stack);
+      }
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Screenshot not found');
     }
@@ -117,6 +122,7 @@ const server = createServer(async (req, res) => {
       req.on('data', (chunk) => {
         body += chunk.toString();
       });
+
       await new Promise((resolve) => req.on('end', resolve));
       const parsedBody = JSON.parse(body);
 
@@ -140,11 +146,15 @@ const server = createServer(async (req, res) => {
             state = existingState;
           } else {
             try {
-              // Validate inputs
-              new URL(sisenseUrl); // throws if invalid URL
-              if (!sisenseToken.trim()) {
-                throw new Error('sisenseToken cannot be empty');
-              }
+              // Validate inputs with security constraints
+              const validatedUrl = validateUrl(sisenseUrl, {
+                maxLength: 2048,
+                requireHttps: false, // Allow http for local development
+              });
+              const validatedToken = validateToken(sisenseToken, {
+                maxLength: 2048,
+                minLength: 1,
+              });
 
               state = new Map();
 
@@ -154,9 +164,9 @@ const server = createServer(async (req, res) => {
               const baseUrl = `${protocol}://${host}`;
               state.set('baseUrl', baseUrl);
 
-              // Store credentials for chart rendering
-              state.set('sisenseUrl', sisenseUrl);
-              state.set('sisenseToken', sisenseToken);
+              // Store validated credentials for chart rendering
+              state.set('sisenseUrl', validatedUrl);
+              state.set('sisenseToken', validatedToken);
 
               const {
                 createHttpClientFromConfig,
@@ -165,8 +175,8 @@ const server = createServer(async (req, res) => {
                 initializeOpenAIClient,
               } = await import('@sisense/sdk-ai-core');
               const httpClient = createHttpClientFromConfig({
-                url: sisenseUrl,
-                token: sisenseToken,
+                url: validatedUrl,
+                token: validatedToken,
               });
               // Initialize the httpClient (required before use)
               if (initializeHttpClient) {
@@ -180,14 +190,15 @@ const server = createServer(async (req, res) => {
 
               persistentStates.set(credKey, state);
             } catch (error) {
-              console.error('Failed to initialize credential-based state:', error);
+              const sanitized = sanitizeError(error);
+              console.error('Failed to initialize credential-based state:', sanitized.message);
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(
                 JSON.stringify({
                   jsonrpc: '2.0',
                   error: {
                     code: -32000,
-                    message: `Initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    message: `Initialization failed: ${sanitized.message}`,
                   },
                   id: null,
                 }),
@@ -283,6 +294,7 @@ initializeSisenseClients()
     });
   })
   .catch((error) => {
-    console.error('Failed to initialize Sisense clients:', error);
+    const sanitized = sanitizeError(error);
+    console.error('Failed to initialize Sisense clients:', sanitized.message);
     process.exit(1);
   });

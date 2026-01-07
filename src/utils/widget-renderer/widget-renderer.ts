@@ -4,6 +4,7 @@ import { type ChartWidgetProps, type SisenseContextProviderProps } from '@sisens
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { fromTokenFile } from '@aws-sdk/credential-provider-web-identity';
 import { renderChartWidgetWithPlaywrightCT } from './widget-ct-runner.js';
+import { sanitizeError } from '../string-utils.js';
 
 // Lazily loaded S3 client
 let s3Client: S3Client | null | undefined;
@@ -124,14 +125,13 @@ export async function renderChartWidget(args: {
           );
           console.info('Screenshot uploaded to S3', { bucket, filename });
         } catch (s3Error) {
+          const sanitized = sanitizeError(s3Error);
           console.error('Failed to upload screenshot to S3', {
             bucket,
             filename,
-            error: s3Error instanceof Error ? s3Error.message : String(s3Error),
+            error: sanitized.message,
           });
-          throw new Error(
-            `S3 upload failed: ${s3Error instanceof Error ? s3Error.message : String(s3Error)}`,
-          );
+          throw new Error(`S3 upload failed: ${sanitized.message}`);
         }
       }
 
@@ -164,8 +164,9 @@ export async function renderChartWidget(args: {
       lastError = error instanceof Error ? error : new Error(String(error));
 
       if (attempt < maxRetries) {
+        const sanitized = sanitizeError(lastError);
         console.warn(`Render attempt ${attempt + 1} failed, retrying...`, {
-          error: lastError.message,
+          error: sanitized.message,
         });
         // Wait before retry (exponential backoff)
         await new Promise((resolve) => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
@@ -174,11 +175,11 @@ export async function renderChartWidget(args: {
   }
 
   // All retries exhausted
+  const sanitized = sanitizeError(lastError, false);
   console.error('Failed to render widget after retries', {
     attempts: maxRetries + 1,
-    error: lastError?.message,
-    stack: lastError?.stack,
+    error: sanitized.message,
   });
 
-  throw lastError || new Error('Widget rendering failed');
+  throw new Error(sanitized.message || 'Widget rendering failed');
 }

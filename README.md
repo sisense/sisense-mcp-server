@@ -63,11 +63,11 @@ https://your-ngrok-url.ngrok-free.app/mcp?sisenseUrl=https://your-instance.sisen
 
 ## Configuration
 
-| Parameter | Description |
-|-----------|-------------|
-| `sisenseUrl` | Full URL to your Sisense instance (e.g., `https://instance.sisense.com`) |
-| `sisenseToken` | Sisense API authentication token |
-| `PORT` | (Optional) Server port, defaults to 3000 |
+| Parameter      | Description                                                              |
+| -------------- | ------------------------------------------------------------------------ |
+| `sisenseUrl`   | Full URL to your Sisense instance (e.g., `https://instance.sisense.com`) |
+| `sisenseToken` | Sisense API authentication token                                         |
+| `PORT`         | (Optional) Server port, defaults to 3000                                 |
 
 The server automatically derives its public base URL from request headers, so it works correctly behind proxies like ngrok.
 
@@ -89,3 +89,14 @@ bun run type-check
 # Lint
 bun run lint
 ```
+
+## Security Considerations
+
+⚠️ NEVER commit credentials to version control
+⚠️ Use secret managers or vaults - NOT environment variables in production
+⚠️ NEVER bind to 0.0.0.0 in production - use 127.0.0.1 or Unix socket
+⚠️ NEVER connect to production Sisense - use dev/staging environments only
+⚠️ Enable authentication - never run without auth
+⚠️ Approve EVERY tool call - review all parameters before execution
+⚠️ Create dedicated Sisense service account with minimum required permissions
+⚠️ Rotate credentials regularly (every 90 days recommended)

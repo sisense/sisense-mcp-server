@@ -8,6 +8,7 @@ import type { RequestId } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { csdkBrowserMock } from '@/utils/csdk-browser-mock';
 import type { SessionState } from '../types/sessions.js';
+import { sanitizeError } from '../utils/string-utils.js';
 
 export const buildChartOutputSchema = z.object({
   success: z.boolean(),
@@ -103,7 +104,8 @@ export async function buildChart(
         if (insightsResult.status === 'fulfilled') {
           insights = insightsResult.value;
         } else {
-          console.warn('Failed to generate NLG insights:', insightsResult.reason);
+          const sanitized = sanitizeError(insightsResult.reason);
+          console.warn('Failed to generate NLG insights:', sanitized.message);
         }
 
         // Extract imageUrl, handling errors independently
@@ -111,7 +113,8 @@ export async function buildChart(
         if (renderResult.status === 'fulfilled') {
           imageUrl = renderResult.value.content[0]?.text;
         } else {
-          console.warn('Failed to render chart widget:', renderResult.reason);
+          const sanitized = sanitizeError(renderResult.reason);
+          console.warn('Failed to render chart widget:', sanitized.message);
         }
 
         return { chartSummary, imageUrl, insights };

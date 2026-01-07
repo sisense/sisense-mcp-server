@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { sanitizeForDescription, sanitizeForText } from '../utils/string-utils.js';
 
 /**
  * Register all Sisense prompts with the MCP server.
@@ -24,23 +25,28 @@ export function registerPrompts(server: McpServer) {
     async (args) => {
       const { dataSourceTitle, topic } = args;
 
-      const topicContext = topic ? `\n\nThe user is specifically interested in: "${topic}"` : '';
+      // Sanitize user inputs to prevent injection attacks and format breaking
+      const sanitizedDataSourceTitle = sanitizeForDescription(dataSourceTitle);
+      const sanitizedTopic = topic ? sanitizeForText(topic) : undefined;
+      const topicContext = sanitizedTopic
+        ? `\n\nThe user is specifically interested in: "${sanitizedTopic}"`
+        : '';
 
       return {
-        description: `Guided analysis of data source "${dataSourceTitle}"`,
+        description: `Guided analysis of data source "${sanitizedDataSourceTitle}"`,
         messages: [
           {
             role: 'assistant',
             content: {
               type: 'text',
-              text: `I'll help you analyze the "${dataSourceTitle}" data source. This workflow will:\n\n1. **Explore the data structure** - Identify available tables and fields\n2. **Understand your data** - Find key metrics and dimensions\n3. **Generate insights** - Create relevant visualizations${topicContext}\n\nLet me start by examining the available fields in this data source.`,
+              text: `I'll help you analyze the "${sanitizedDataSourceTitle}" data source. This workflow will:\n\n1. **Explore the data structure** - Identify available tables and fields\n2. **Understand your data** - Find key metrics and dimensions\n3. **Generate insights** - Create relevant visualizations${topicContext}\n\nLet me start by examining the available fields in this data source.`,
             },
           },
           {
             role: 'assistant',
             content: {
               type: 'text',
-              text: `To complete this analysis, I'll use these tools in sequence:\n\n1. **getDataSourceFields** with dataSourceTitle: "${dataSourceTitle}" to understand the data structure\n2. **buildChart** to create visualizations based on the available fields\n\nThis will give you a comprehensive view of your data and help identify key business insights.`,
+              text: `To complete this analysis, I'll use these tools in sequence:\n\n1. **getDataSourceFields** with dataSourceTitle: "${sanitizedDataSourceTitle}" to understand the data structure\n2. **buildChart** to create visualizations based on the available fields\n\nThis will give you a comprehensive view of your data and help identify key business insights.`,
             },
           },
         ],
@@ -71,26 +77,30 @@ export function registerPrompts(server: McpServer) {
     async (args) => {
       const { query, dataSourceTitle, timeframe } = args;
 
-      const timeContext = timeframe ? ` for ${timeframe}` : '';
+      // Sanitize user inputs to prevent injection attacks and format breaking
+      const sanitizedQuery = sanitizeForDescription(query);
+      const sanitizedDataSourceTitle = sanitizeForText(dataSourceTitle);
+      const sanitizedTimeframe = timeframe ? sanitizeForText(timeframe) : undefined;
+      const timeContext = sanitizedTimeframe ? ` for ${sanitizedTimeframe}` : '';
 
-      // Parse the query for intent
+      // Parse the query for intent (use original query for parsing, but sanitized for display)
       const intent = parseQueryIntent(query);
 
       return {
-        description: `Executive KPI analysis: "${query}"`,
+        description: `Executive KPI analysis: "${sanitizedQuery}"`,
         messages: [
           {
             role: 'assistant',
             content: {
               type: 'text',
-              text: `I'll help you understand your business performance with the query: "${query}"\n\nBased on your question, I've identified:\n• **Analysis Type**: ${intent.type}\n• **Key Metrics**: ${intent.metrics.join(', ') || 'To be determined from data'}\n• **Timeframe**: ${timeframe || 'Current period'}\n• **Data Source**: ${dataSourceTitle}`,
+              text: `I'll help you understand your business performance with the query: "${sanitizedQuery}"\n\nBased on your question, I've identified:\n• **Analysis Type**: ${intent.type}\n• **Key Metrics**: ${intent.metrics.join(', ') || 'To be determined from data'}\n• **Timeframe**: ${sanitizedTimeframe || 'Current period'}\n• **Data Source**: ${sanitizedDataSourceTitle}`,
             },
           },
           {
             role: 'assistant',
             content: {
               type: 'text',
-              text: `To provide comprehensive insights, I'll:\n\n1. **Explore the data source** - Use getDataSourceFields to understand available metrics\n2. **Create visualizations** - Use buildChart with your query: "${query}${timeContext}"\n3. **Provide executive summary** - Explain findings in business terms\n\nThis will give you actionable insights for strategic decision-making.`,
+              text: `To provide comprehensive insights, I'll:\n\n1. **Explore the data source** - Use getDataSourceFields to understand available metrics\n2. **Create visualizations** - Use buildChart with your query: "${sanitizedQuery}${timeContext}"\n3. **Provide executive summary** - Explain findings in business terms\n\nThis will give you actionable insights for strategic decision-making.`,
             },
           },
         ],
@@ -118,21 +128,25 @@ export function registerPrompts(server: McpServer) {
     async (args) => {
       const { dataSourceTitle, reportTopic, chartCount = 3 } = args;
 
+      // Sanitize user inputs to prevent injection attacks and format breaking
+      const sanitizedDataSourceTitle = sanitizeForText(dataSourceTitle);
+      const sanitizedReportTopic = sanitizeForDescription(reportTopic);
+
       return {
-        description: `Dashboard report for "${reportTopic}"`,
+        description: `Dashboard report for "${sanitizedReportTopic}"`,
         messages: [
           {
             role: 'assistant',
             content: {
               type: 'text',
-              text: `I'll create a comprehensive dashboard report on "${reportTopic}" using the "${dataSourceTitle}" data source.\n\nThis report will include ${chartCount} complementary visualizations that:\n• Provide an executive overview\n• Show trends and patterns\n• Highlight key metrics and KPIs\n• Enable data-driven decision making`,
+              text: `I'll create a comprehensive dashboard report on "${sanitizedReportTopic}" using the "${sanitizedDataSourceTitle}" data source.\n\nThis report will include ${chartCount} complementary visualizations that:\n• Provide an executive overview\n• Show trends and patterns\n• Highlight key metrics and KPIs\n• Enable data-driven decision making`,
             },
           },
           {
             role: 'assistant',
             content: {
               type: 'text',
-              text: `**Report Generation Strategy:**\n\n1. **Understand the data** - First, I'll use getDataSourceFields to identify relevant metrics and dimensions for "${reportTopic}"\n\n2. **Create visualizations** - I'll generate ${chartCount} charts using buildChart:\n   • Overview chart (summary metrics)\n   • Trend chart (time-based analysis)\n   • Breakdown chart (categorical comparison)\n\n3. **Compile the report** - Present all visualizations with insights\n\nLet me start by exploring the available data.`,
+              text: `**Report Generation Strategy:**\n\n1. **Understand the data** - First, I'll use getDataSourceFields to identify relevant metrics and dimensions for "${sanitizedReportTopic}"\n\n2. **Create visualizations** - I'll generate ${chartCount} charts using buildChart:\n   • Overview chart (summary metrics)\n   • Trend chart (time-based analysis)\n   • Breakdown chart (categorical comparison)\n\n3. **Compile the report** - Present all visualizations with insights\n\nLet me start by exploring the available data.`,
             },
           },
         ],
@@ -161,24 +175,33 @@ export function registerPrompts(server: McpServer) {
     async (args) => {
       const { dataSourceTitle, metrics, groupBy } = args;
 
-      const metricsList = metrics.split(',').map((m) => m.trim());
-      const groupContext = groupBy ? ` grouped by ${groupBy}` : '';
+      // Sanitize user inputs to prevent injection attacks and format breaking
+      const sanitizedDataSourceTitle = sanitizeForText(dataSourceTitle);
+      const sanitizedMetrics = sanitizeForDescription(metrics);
+      const sanitizedGroupBy = groupBy ? sanitizeForText(groupBy) : undefined;
+
+      // Split and sanitize each metric individually
+      const metricsList = sanitizedMetrics
+        .split(',')
+        .map((m) => sanitizeForText(m.trim()))
+        .filter((m) => m.length > 0);
+      const groupContext = sanitizedGroupBy ? ` grouped by ${sanitizedGroupBy}` : '';
 
       return {
-        description: `Metric comparison: ${metrics}`,
+        description: `Metric comparison: ${sanitizedMetrics}`,
         messages: [
           {
             role: 'assistant',
             content: {
               type: 'text',
-              text: `I'll compare the following metrics from "${dataSourceTitle}"${groupContext}:\n\n${metricsList.map((m) => `• ${m}`).join('\n')}\n\nThis analysis will help identify:\n• Relationships between metrics\n• Performance patterns\n• Areas requiring attention`,
+              text: `I'll compare the following metrics from "${sanitizedDataSourceTitle}"${groupContext}:\n\n${metricsList.map((m) => `• ${m}`).join('\n')}\n\nThis analysis will help identify:\n• Relationships between metrics\n• Performance patterns\n• Areas requiring attention`,
             },
           },
           {
             role: 'assistant',
             content: {
               type: 'text',
-              text: `**Comparison Approach:**\n\n1. **Verify metrics exist** - Use getDataSourceFields to confirm the metrics are available\n\n2. **Generate comparison chart** - Use buildChart with a query like:\n   "Compare ${metrics}${groupContext}"\n\n3. **Analyze results** - Interpret the visualization and provide insights\n\nI'll create visualizations that best represent the comparison between these metrics.`,
+              text: `**Comparison Approach:**\n\n1. **Verify metrics exist** - Use getDataSourceFields to confirm the metrics are available\n\n2. **Generate comparison chart** - Use buildChart with a query like:\n   "Compare ${sanitizedMetrics}${groupContext}"\n\n3. **Analyze results** - Interpret the visualization and provide insights\n\nI'll create visualizations that best represent the comparison between these metrics.`,
             },
           },
         ],
