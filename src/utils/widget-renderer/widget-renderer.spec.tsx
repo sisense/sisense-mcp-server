@@ -23,29 +23,29 @@ test.describe('Widget Renderer', () => {
 
     // Wait for widget container to appear (works for both Highcharts and indicators)
     await page.waitForSelector('[data-test-id="widget-container"]', {
-      timeout: 6000,
+      timeout: 10000,
       state: 'attached',
     });
 
     // Wait for network to be idle (data fetching complete)
-    await page.waitForLoadState('networkidle', { timeout: 6000 });
+    await page.waitForLoadState('networkidle', { timeout: 30000 });
 
     // Wait for widget content to be rendered (any child element)
     await page.waitForSelector('[data-test-id="widget-container"] > div', {
-      timeout: 6000,
+      timeout: 15000,
     });
 
     // Small wait for widget to finish rendering (animations, etc.)
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(2000);
 
     // Take screenshot to custom path if provided
     const screenshotPath = process.env.SCREENSHOT_OUTPUT_PATH;
     if (screenshotPath) {
-      await component.screenshot({ path: screenshotPath, timeout: 2000 });
+      await component.screenshot({ path: screenshotPath, timeout: 10000 });
     } else {
       // Fallback to default snapshot behavior
       await expect(component).toHaveScreenshot('widget-render.png', {
-        timeout: 2000,
+        timeout: 10000,
       });
     }
   });

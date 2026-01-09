@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './src/utils/widget-renderer',
   testMatch: '**/*.spec.tsx',
   snapshotDir: './__screenshots__',
-  timeout: 30 * 1000, // Reduced to 30 seconds for faster feedback
+  timeout: 90 * 1000, // 90 seconds to accommodate all operations
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -16,7 +16,7 @@ export default defineConfig({
     ctPort: 3100,
     testIdAttribute: 'data-test-id',
     // Aggressive performance settings
-    actionTimeout: 5000, // Fast action timeout
+    actionTimeout: 20000, // 20 seconds to allow network operations to complete
     navigationTimeout: 10000, // Fast navigation timeout
   },
 
