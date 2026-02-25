@@ -1,0 +1,25 @@
+.main {
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 1rem;
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--color-text-primary);
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.chartContainer {
+  width: 100%;
+  min-height: 400px;
+}
+
+.error {
+  color: #dc2626;
+}

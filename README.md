@@ -9,6 +9,7 @@ A Model Context Protocol (MCP) server that provides integration with Sisense ana
   - `getDataSources`: Retrieve Sisense data sources (or data models)
   - `getDataSourceFields`: List all available fields for a specific data source
   - `buildChart`: Build charts from natural language prompts
+- **MCP Apps**: When used in MCP Apps–capable clients (e.g. Claude), `buildChart` exposes an interactive View that renders the chart in an iframe within the app.
 - **Per-Session Authentication**: Sisense credentials passed via URL parameters
 - **TypeScript**: Full type safety and modern ESM support
 - **Lightweight**: Pure Node.js HTTP server, no heavy frameworks
@@ -37,22 +38,30 @@ bun run dev
 The server will display the connection URL:
 
 ```
-Sisense MCP Server running on http://localhost:3000
+Sisense MCP Server running on http://localhost:3001
 
 Connect with:
-  http://localhost:3000/mcp?sisenseUrl=<SISENSE_URL>&sisenseToken=<SISENSE_TOKEN>
+  http://localhost:3001/mcp?sisenseUrl=<SISENSE_URL>&sisenseToken=<SISENSE_TOKEN>
 
 Endpoints:
-  Health: http://localhost:3000/health
-  Screenshots: http://localhost:3000/screenshots/
+  Health: http://localhost:3001/health
+  Screenshots: http://localhost:3001/screenshots/
 ```
 
 ### Connecting from Claude Desktop
 
+Credentials can be provided via URL params or via env vars `SISENSE_URL` and `SISENSE_TOKEN`. If both are set, URL params take precedence.
+
 Configure Claude Desktop to connect using the full URL with your Sisense credentials:
 
 ```
-http://localhost:3000/mcp?sisenseUrl=https://your-instance.sisense.com&sisenseToken=your-api-token
+http://localhost:3001/mcp?sisenseUrl=https://your-instance.sisense.com&sisenseToken=your-api-token
+```
+
+Or set `SISENSE_URL` and `SISENSE_TOKEN` in your environment and connect with:
+
+```
+http://localhost:3001/mcp
 ```
 
 Or via ngrok/public URL:
@@ -67,7 +76,7 @@ https://your-ngrok-url.ngrok-free.app/mcp?sisenseUrl=https://your-instance.sisen
 | -------------- | ------------------------------------------------------------------------ |
 | `sisenseUrl`   | Full URL to your Sisense instance (e.g., `https://instance.sisense.com`) |
 | `sisenseToken` | Sisense API authentication token                                         |
-| `PORT`         | (Optional) Server port, defaults to 3000                                 |
+| `PORT`         | (Optional) Server port, defaults to 3001                                 |
 
 The server automatically derives its public base URL from request headers, so it works correctly behind proxies like ngrok.
 
@@ -77,8 +86,11 @@ The server automatically derives its public base URL from request headers, so it
 # Run server in development mode with hot reload
 bun run dev
 
-# Build the project
+# Build the project (View + server)
 bun run build
+
+# Build only the analytics View (dist/view.html)
+bun run build:view
 
 # Run tests
 bun test
@@ -93,10 +105,17 @@ bun run lint
 ## Security Considerations
 
 ⚠️ NEVER commit credentials to version control
+
 ⚠️ Use secret managers or vaults - NOT environment variables in production
+
 ⚠️ NEVER bind to 0.0.0.0 in production - use 127.0.0.1 or Unix socket
+
 ⚠️ NEVER connect to production Sisense - use dev/staging environments only
+
 ⚠️ Enable authentication - never run without auth
+
 ⚠️ Approve EVERY tool call - review all parameters before execution
+
 ⚠️ Create dedicated Sisense service account with minimum required permissions
+
 ⚠️ Rotate credentials regularly (every 90 days recommended)

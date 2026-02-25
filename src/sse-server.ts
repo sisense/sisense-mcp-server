@@ -25,7 +25,7 @@ function createS3Client(): S3Client | null {
 }
 const s3Client = createS3Client();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // MCP session ID → transport + state reference
 const sessions = new Map<
@@ -115,6 +115,20 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === '/mcp') {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, mcp-session-id, mcp-protocol-version',
+    );
+    res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id, mcp-protocol-version');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, { 'Access-Control-Max-Age': '86400' });
+      res.end();
+      return;
+    }
+
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
     if (req.method === 'POST') {
@@ -133,8 +147,10 @@ const server = createServer(async (req, res) => {
       if (existingSession) {
         transport = existingSession.transport;
       } else if (!sessionId && isInitializeRequest(parsedBody)) {
-        const sisenseUrl = url.searchParams.get('sisenseUrl');
-        const sisenseToken = url.searchParams.get('sisenseToken');
+        const sisenseUrl =
+          url.searchParams.get('sisenseUrl') ?? process.env.SISENSE_URL?.trim() ?? null;
+        const sisenseToken =
+          url.searchParams.get('sisenseToken') ?? process.env.SISENSE_TOKEN?.trim() ?? null;
 
         let state: SessionState;
 
@@ -230,6 +246,12 @@ const server = createServer(async (req, res) => {
         const mcpServer = await setupMcpServer(state);
         await mcpServer.connect(transport);
       } else {
+        console.warn(
+          'MCP POST rejected: sessionId=',
+          sessionId ?? 'missing',
+          'found=',
+          sessionId ? sessions.has(sessionId) : false,
+        );
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(
           JSON.stringify({
@@ -286,6 +308,10 @@ initializeSisenseClients()
       console.log('Connect with:');
       console.log(
         `  http://localhost:${PORT}/mcp?sisenseUrl=<SISENSE_URL>&sisenseToken=<SISENSE_TOKEN>`,
+      );
+      console.log(
+        '  Or set SISENSE_URL and SISENSE_TOKEN in the environment and use http://localhost:' +
+          `${PORT}/mcp`,
       );
       console.log('');
       console.log('Endpoints:');

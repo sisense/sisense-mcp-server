@@ -9,14 +9,30 @@ import { z } from 'zod';
 import { csdkBrowserMock } from '@/utils/csdk-browser-mock';
 import type { SessionState } from '../types/sessions.js';
 import { sanitizeError } from '../utils/string-utils.js';
+import { CustomSuperJSON } from '@sisense/sdk-ui/analytics-composer/node';
 
-export const buildChartOutputSchema = z.object({
+const MCP_APP_BUILD_CHART_ENABLED =
+  process.env.MCP_APP_BUILD_CHART_ENABLED !== 'false' &&
+  process.env.MCP_APP_BUILD_CHART_ENABLED !== '0';
+
+const baseOutputSchema = z.object({
   success: z.boolean(),
   chartId: z.string().optional(),
-  imageUrl: z.string().optional(),
   insights: z.string().optional(),
   message: z.string(),
 });
+
+export const buildChartOutputSchemaAppMode = baseOutputSchema;
+
+export const buildChartOutputSchemaToolMode = baseOutputSchema.extend({
+  imageUrl: z.string().optional(),
+});
+
+export function getBuildChartOutputSchema() {
+  return MCP_APP_BUILD_CHART_ENABLED
+    ? buildChartOutputSchemaAppMode
+    : buildChartOutputSchemaToolMode;
+}
 
 function getChartSummaries(sessionState?: SessionState): ChartSummary[] {
   return (sessionState?.get('chart:summaries') as ChartSummary[]) ?? [];
@@ -36,7 +52,7 @@ export async function buildChart(
   try {
     const { dataSourceTitle, userPrompt } = args;
 
-    const toolCallId = String(requestId ?? `chart_${Date.now()}`);
+    const toolCallId = String(requestId ? `chart-${requestId}` : `chart-${Date.now()}`);
 
     const result = await csdkBrowserMock.withBrowserEnvironment(async () => {
       const { buildChartEngine } = await import('@sisense/sdk-ai-core');
@@ -46,9 +62,8 @@ export async function buildChart(
         toolCallId,
         dataSourceTitle,
         chartSummaries: getChartSummaries(sessionState),
-        retrieveChart: (id) =>
-          (sessionState?.get(`chart:${id}`) as ExtendedChartWidgetProps) ?? null,
-        saveChart: (id, props) => sessionState?.set(`chart:${id}`, props),
+        retrieveChart: (id) => (sessionState?.get(id) as ExtendedChartWidgetProps) ?? null,
+        saveChart: (id, props) => sessionState?.set(id, props),
         isNlqV3Enabled: true,
         httpClient: sessionState?.get('httpClient') as HttpClient | undefined,
         openAIClient: sessionState?.get('openAIClient') as BuildChartContext['openAIClient'],
@@ -59,9 +74,11 @@ export async function buildChart(
         buildChartContext,
       );
 
+      console.info('>>> CHART SUMMARY', chartSummary);
+
       addChartSummary(sessionState, chartSummary);
 
-      const savedProps = sessionState?.get(`chart:${chartSummary.chartId}`) as
+      const savedProps = sessionState?.get(chartSummary.chartId) as
         | ExtendedChartWidgetProps
         | undefined;
 
@@ -84,19 +101,23 @@ export async function buildChart(
         // Import getNlgInsightsFromWidget dynamically
         const { getNlgInsightsFromWidget } = await import('@sisense/sdk-ui/ai');
 
-        // Run both operations in parallel since they are independent
+        // Always run insights; optionally run image render (skip when MCP App mode - app displays chart)
+        const insightsPromise = httpClient
+          ? getNlgInsightsFromWidget(savedProps, httpClient, { verbosity: 'High' })
+          : Promise.reject(new Error('HttpClient not available for insights generation'));
+
+        const renderPromise = MCP_APP_BUILD_CHART_ENABLED
+          ? Promise.resolve(null)
+          : renderChartWidget({
+              widgetProps: savedProps,
+              sisenseUrl,
+              sisenseToken,
+              baseUrl,
+            });
+
         const [insightsResult, renderResult] = await Promise.allSettled([
-          // Generate NLG insights
-          httpClient
-            ? getNlgInsightsFromWidget(savedProps, httpClient, { verbosity: 'High' })
-            : Promise.reject(new Error('HttpClient not available for insights generation')),
-          // Render chart widget
-          renderChartWidget({
-            widgetProps: savedProps,
-            sisenseUrl,
-            sisenseToken,
-            baseUrl,
-          }),
+          insightsPromise,
+          renderPromise,
         ]);
 
         // Extract insights, handling errors independently
@@ -108,33 +129,51 @@ export async function buildChart(
           console.warn('Failed to generate NLG insights:', sanitized.message);
         }
 
-        // Extract imageUrl, handling errors independently
+        // Extract imageUrl when render was run (tool mode only)
         let imageUrl: string | undefined;
-        if (renderResult.status === 'fulfilled') {
+        if (
+          !MCP_APP_BUILD_CHART_ENABLED &&
+          renderResult.status === 'fulfilled' &&
+          renderResult.value
+        ) {
           imageUrl = renderResult.value.content[0]?.text;
-        } else {
+        } else if (!MCP_APP_BUILD_CHART_ENABLED && renderResult.status === 'rejected') {
           const sanitized = sanitizeError(renderResult.reason);
           console.warn('Failed to render chart widget:', sanitized.message);
         }
 
-        return { chartSummary, imageUrl, insights };
+        return {
+          chartSummary,
+          imageUrl,
+          insights,
+          sisenseUrl,
+          sisenseToken,
+          serializedWidgetProps: CustomSuperJSON.serialize(savedProps),
+        };
       }
 
       console.warn('No saved props found for chartId:', chartSummary.chartId);
-      return { chartSummary, imageUrl: undefined, insights: undefined };
+      return {
+        chartSummary,
+        imageUrl: undefined,
+        insights: undefined,
+        sisenseUrl: undefined,
+        sisenseToken: undefined,
+      };
     });
 
-    const { chartSummary, imageUrl, insights } = result;
+    const { chartSummary, imageUrl, insights, sisenseUrl, sisenseToken, serializedWidgetProps } =
+      result;
 
-    const output = {
+    const output: Record<string, unknown> = {
       success: true,
       chartId: chartSummary.chartId,
       message: chartSummary.message || `Chart created successfully for query: "${userPrompt}"`,
-      imageUrl,
       insights,
+      ...(MCP_APP_BUILD_CHART_ENABLED ? {} : { imageUrl }),
     };
 
-    return {
+    const finalOutput = {
       content: [
         {
           type: 'text' as const,
@@ -142,16 +181,23 @@ export async function buildChart(
         },
       ],
       structuredContent: output,
+      _meta: {
+        sisenseUrl,
+        sisenseToken,
+        serializedWidgetProps,
+      },
     };
+
+    return finalOutput;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 
-    const output = {
+    const output: Record<string, unknown> = {
       success: false,
       chartId: undefined,
       message: `Failed to create chart: ${errorMessage}`,
-      imageUrl: undefined,
       insights: undefined,
+      ...(MCP_APP_BUILD_CHART_ENABLED ? {} : { imageUrl: undefined }),
     };
 
     return {

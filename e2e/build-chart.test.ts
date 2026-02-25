@@ -50,26 +50,36 @@ describe('Build Chart Tool E2E', () => {
 
         // Debug: Check if chart props were saved
         const chartId = chartSummaries[0].chartId;
-        const savedChartProps = sessionState.get(`chart:${chartId}`);
+        const savedChartProps = sessionState.get(chartId);
 
         // Verify that chart props were saved (required for image generation)
         expect(savedChartProps).toBeDefined();
         expect(savedChartProps).toHaveProperty('chartType');
       }
 
-      // imageUrl and insights are optional; assert type only when present
-      if ('structuredContent' in result && result.structuredContent) {
-        const structured = result.structuredContent as {
-          imageUrl?: unknown;
-          insights?: unknown;
-        };
+      // Result structuredContent must contain schema fields (no chartPropsSerialized)
+      const structured = result.structuredContent as Record<string, unknown> | undefined;
+      if (structured) {
+        expect(structured).not.toHaveProperty('chartPropsSerialized');
+        expect(structured).toHaveProperty('success', true);
+        expect(structured).toHaveProperty('chartId');
+        expect(structured).toHaveProperty('message');
+        expect(typeof structured.chartId).toBe('string');
         if (structured.imageUrl != null) {
           expect(typeof structured.imageUrl).toBe('string');
         }
-        // Verify insights exist and is a string when present
         if (structured.insights != null && typeof structured.insights === 'string') {
           expect(structured.insights.length).toBeGreaterThan(0);
         }
+      }
+
+      // Credentials are in _meta (for MCP App mode)
+      const meta = result._meta as Record<string, unknown> | undefined;
+      if (meta) {
+        expect(meta).toHaveProperty('sisenseUrl');
+        expect(meta).toHaveProperty('sisenseToken');
+        expect(typeof meta.sisenseUrl).toBe('string');
+        expect(typeof meta.sisenseToken).toBe('string');
       }
     },
     { timeout: 60000 },

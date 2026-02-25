@@ -12,7 +12,7 @@ export async function createTestSessionState(): Promise<SessionState> {
   const sisenseToken = process.env.SISENSE_TOKEN || 'test-token';
 
   // Set base URL for test environment
-  state.set('baseUrl', 'http://localhost:3000');
+  state.set('baseUrl', 'http://localhost:3001');
 
   // Store credentials for chart rendering
   state.set('sisenseUrl', sisenseUrl);

@@ -16,6 +16,12 @@
 # GITHUB_KNOWN_HOSTS      - File variable containing GitHub SSH host keys
 #                           Required for github-release job
 #                           Retrieve: ssh-keyscan github.com
+# GITLAB_PUSH_TOKEN       - (Optional) Project/Deploy token with write_repository
+#                           Required for BUMP_STRATEGY (version bump + tag in GitLab)
+#                           If unset, CI_JOB_TOKEN is used (enable in Settings > CI/CD > Token Access)
+# BUMP_STRATEGY           - (Optional) Set when manually running github-release: patch|minor|major
+#                           Bumps version in GitLab, creates tags in GitLab + GitHub, then syncs
+# GITHUB_RELEASE_DRY_RUN  - (Optional) Set to "true" to test job in MR without pushing anywhere
 # =============================================================================
 
 default:
@@ -23,6 +29,11 @@ default:
   interruptible: true
   tags:
     - k8s
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 stages:
   - build
@@ -38,6 +49,9 @@ variables:
 
 build:
   stage: build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "push"
   before_script:
     - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.5"
     - export BUN_INSTALL="$HOME/.bun"
@@ -55,14 +69,14 @@ docker:
   image: docker:latest
   services:
     - name: docker:dind
-      command: ["--tls=false"]
+      command: ['--tls=false']
   variables:
     # Docker-in-Docker configuration for Kubernetes runners
     # Disable TLS - certs don't mount properly in ephemeral k8s pods
     DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
+    DOCKER_TLS_CERTDIR: ''
     # Unset DOCKER_AUTH_CONFIG (set at group level) to use CLI auth
-    DOCKER_AUTH_CONFIG: ""
+    DOCKER_AUTH_CONFIG: ''
   before_script:
     - apk add --no-cache aws-cli
   script:
@@ -91,13 +105,17 @@ docker:
     - docker build --platform linux/amd64 -t $ECR_REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHA -t $ECR_REGISTRY/$IMAGE_NAME:latest .
     - docker push $ECR_REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHA
     - docker push $ECR_REGISTRY/$IMAGE_NAME:latest
-  only:
-    - main
+  needs:
+    - build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
 
 github-release:
   stage: github-release
   image: node:20-alpine
-  when: manual
   variables:
     GITHUB_TARGET_BRANCH: main
     GITHUB_URL: git@github.com:sisense/sisense-mcp-server.git
@@ -125,3 +143,11 @@ github-release:
     - 'bash ./ci/sync-to-github.sh "chore: sync sisense-mcp-server ($CI_COMMIT_SHORT_SHA)"'
   needs:
     - build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+    - if: $GITHUB_RELEASE_DRY_RUN == "true"
+      when: manual
+    - when: never
