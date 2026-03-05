@@ -190,10 +190,13 @@ const server = createServer(async (req, res) => {
                 initializeHttpClient,
                 initializeOpenAIClient,
               } = await import('@sisense/sdk-ai-core');
-              const httpClient = createHttpClientFromConfig({
-                url: validatedUrl,
-                token: validatedToken,
-              });
+              const httpClient = createHttpClientFromConfig(
+                {
+                  url: validatedUrl,
+                  token: validatedToken,
+                },
+                { 'x-sisense-origin': 'mcp-server' },
+              );
               // Initialize the httpClient (required before use)
               if (initializeHttpClient) {
                 initializeHttpClient(httpClient);
