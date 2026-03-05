@@ -1,11 +1,33 @@
 {
-  "name": "sisense-mcp-server",
-  "version": "0.2.0",
-  "description": "MCP server for Sisense integration supporting SSE protocol",
+  "name": "@sisense/mcp-server",
+  "version": "0.2.1",
+  "mcpName": "io.github.sisense/mcp-server",
+  "homepage": "https://github.com/sisense/sisense-mcp-server#readme",
+  "description": "MCP server leveraging Sisense Intelligence for actionable insights and analytics.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sisense/sisense-mcp-server.git"
+  },
+  "keywords": [
+    "Sisense",
+    "Sisense Intelligence",
+    "MCP Server",
+    "Analytics"
+  ],
+  "author": "Sisense",
+  "license": "SEE LICENSE IN LICENSE.md",
   "type": "module",
   "main": "dist/sse-server.js",
   "bin": {
     "sisense-mcp-server": "dist/sse-server.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "cross-env INPUT=view.html vite build && bun build src/sse-server.ts --outdir dist --target node --format esm --splitting",
@@ -20,11 +42,6 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"e2e/**/*.{ts,tsx}\"",
     "postinstall": "playwright install chromium"
   },
-  "keywords": [
-    "mcp",
-    "sisense",
-    "model-context-protocol"
-  ],
   "dependencies": {
     "@aws-sdk/client-s3": "^3.756.0",
     "@aws-sdk/s3-request-presigner": "^3.756.0",
@@ -59,12 +76,7 @@
     "node": ">=18.0.0",
     "bun": ">=1.0.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sisense/sisense-mcp-server.git"
-  },
   "bugs": {
     "url": "https://github.com/sisense/sisense-mcp-server/issues"
-  },
-  "homepage": "https://github.com/sisense/sisense-mcp-server#readme"
+  }
 }
