@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.sisense/sisense-mcp-server",
+  "description": "MCP server leveraging Sisense Intelligence for actionable insights and analytics.",
+  "repository": {
+    "url": "https://github.com/sisense/sisense-mcp-server",
+    "source": "github"
+  },
+  "version": "0.2.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@sisense/mcp-server",
+      "version": "0.2.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "URL of the Sisense instance",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": false,
+          "name": "SISENSE_URL"
+        },
+        {
+          "description": "Bearer token for the Sisense instance",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true,
+          "name": "SISENSE_TOKEN"
+        }
+      ]
+    }
+  ]
+}
