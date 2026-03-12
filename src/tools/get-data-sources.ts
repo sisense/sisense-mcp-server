@@ -7,7 +7,14 @@ export const getDataSourcesOutputSchema = {
   dataSources: z.array(z.any()),
 };
 
-export async function getDataSources(_args: object, sessionState?: SessionState) {
+export async function getDataSources(
+  _args: object,
+  sessionState?: SessionState,
+): Promise<{
+  content: Array<{ type: 'text'; text: string }>;
+  structuredContent: { dataSources: unknown[] };
+  isError: boolean;
+}> {
   try {
     const { getDataSourcesEngine } = await import('@sisense/sdk-ai-core');
 

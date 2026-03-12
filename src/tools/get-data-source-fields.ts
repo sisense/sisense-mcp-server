@@ -11,7 +11,11 @@ export const getDataSourceFieldsOutputSchema = {
 export async function getDataSourceFields(
   args: { dataSourceTitle: string },
   sessionState?: SessionState,
-) {
+): Promise<{
+  content: Array<{ type: 'text'; text: string }>;
+  structuredContent: { dataSourceTitle: string; fields: unknown[] };
+  isError: boolean;
+}> {
   const { dataSourceTitle } = args;
 
   try {
