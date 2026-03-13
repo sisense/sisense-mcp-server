@@ -9,6 +9,10 @@ on:
     tags:
       - 'v*'
 
+env:
+  # Opt into Node.js 24 for GitHub Actions (Node 20 deprecated; default switches June 2026)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -32,7 +36,7 @@ jobs:
       - name: Setup Node for npm publish
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org/
 
       - name: Publish to npm

@@ -1,11 +1,11 @@
 // IMPORTANT: Import test-setup FIRST to ensure browser mock is initialized
 // before any SDK imports happen. The module-level initialization in test-setup.ts
 // will run automatically when this module is imported.
-import './helpers/test-setup.js';
+import '../helpers/test-setup.js';
 import { describe, it, expect, beforeAll } from 'bun:test';
-import { createMcpTestFixture } from './helpers/mcp-fixtures.js';
-import { assertNoError } from './helpers/test-utils.js';
-import { setupE2ETests } from './helpers/test-setup.js';
+import { createMcpTestFixture } from '../helpers/mcp-fixtures.js';
+import { assertNoError } from '../helpers/test-utils.js';
+import { setupE2ETests } from '../helpers/test-setup.js';
 
 describe('Build Chart Tool E2E', () => {
   beforeAll(async () => {

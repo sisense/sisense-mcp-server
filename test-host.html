@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MCP App Test Host</title>
+  </head>
+  <body style="margin:0;padding:0">
+    <iframe id="app" src="/view.html" style="width:1000px;height:600px;border:none"></iframe>
+    <script>
+      const iframe = document.getElementById('app');
+      window.addEventListener('message', (e) => {
+        const msg = e.data;
+        if (msg?.jsonrpc !== '2.0') return;
+
+        if (msg.method === 'ui/initialize') {
+          iframe.contentWindow.postMessage({
+            jsonrpc: '2.0',
+            id: msg.id,
+            result: {
+              protocolVersion: '2026-01-26',
+              hostInfo: { name: 'Test Host', version: '1.0.0' },
+              hostCapabilities: {},
+              hostContext: { safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 } }
+            }
+          }, '*');
+        }
+
+        if (msg.method === 'ui/notifications/initialized') {
+          window._appReady = true;
+        }
+      });
+
+      window.sendToolResult = function(result) {
+        iframe.contentWindow.postMessage({
+          jsonrpc: '2.0',
+          method: 'ui/notifications/tool-result',
+          params: result
+        }, '*');
+      };
+    </script>
+  </body>
+</html>
