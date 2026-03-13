@@ -1,6 +1,6 @@
 {
   "name": "@sisense/mcp-server",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "mcpName": "io.github.sisense/sisense-mcp-server",
   "homepage": "https://github.com/sisense/sisense-mcp-server#readme",
   "description": "MCP server leveraging Sisense Intelligence for actionable insights and analytics.",
@@ -35,7 +35,7 @@
     "dev": "bun run --watch src/sse-server.ts",
     "start": "bun run dist/sse-server.js",
     "test": "bun test",
-    "test:e2e": "bun test e2e",
+    "test:e2e": "cross-env NODE_ENV=production bun test e2e",
     "lint": "eslint src/**/*.ts",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"e2e/**/*.{ts,tsx}\"",

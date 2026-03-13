@@ -84,4 +84,41 @@ describe('Build Chart Tool E2E', () => {
     },
     { timeout: 60000 },
   );
+
+  it(
+    'when TOOL_CHART_BUILDER_NARRATIVE_ENABLED is false, buildChart succeeds and does not include insights',
+    async () => {
+      const prev = process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+      process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED = 'false';
+      try {
+        const { TOOL_NAME_CHART_BUILDER } = await import('@sisense/sdk-ai-core');
+        const { client } = await createMcpTestFixture();
+
+        const result = await client.callTool({
+          name: TOOL_NAME_CHART_BUILDER,
+          arguments: {
+            dataSourceTitle: 'Sample ECommerce',
+            userPrompt: 'show me total revenue by month with trend',
+          },
+        });
+
+        expect(result).toBeDefined();
+        assertNoError(result);
+
+        const structured = result.structuredContent as Record<string, unknown> | undefined;
+        expect(structured).toBeDefined();
+        expect(structured).toHaveProperty('success', true);
+        expect(structured).toHaveProperty('chartId');
+        expect(structured).toHaveProperty('message');
+        expect(structured).not.toHaveProperty('insights');
+      } finally {
+        if (prev !== undefined) {
+          process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED = prev;
+        } else {
+          delete process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+        }
+      }
+    },
+    { timeout: 60000 },
+  );
 });

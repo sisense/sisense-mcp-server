@@ -1,10 +1,16 @@
 # Changelog
 
-## [0.2.3] - 2026-03-12
+## [0.2.4] - 2026-03-12
 
 ### Changed
 
 - Extend `buildChart` to support narrative disabling
+
+## [0.2.3] - 2026-03-12
+
+### Changed
+
+- Roll back telemetry headers due to issue with `@sisense/sdk-ai-core` v0.6.1
 
 ## [0.2.2] - 2026-03-04
 

@@ -23,9 +23,12 @@ const DIST_DIR = isSource ? path.join(__dirname, '..', 'dist') : __dirname;
 
 const ANALYTICS_RESOURCE_URI = 'ui://sisense-analytics/view.html';
 
-const MCP_APP_BUILD_CHART_ENABLED =
-  process.env.MCP_APP_BUILD_CHART_ENABLED !== 'false' &&
-  process.env.MCP_APP_BUILD_CHART_ENABLED !== '0';
+function isMcpAppEnabled(): boolean {
+  return (
+    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED !== 'false' &&
+    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED !== '0'
+  );
+}
 
 function getCspMeta(sessionState?: SessionState): {
   ui: { csp: { connectDomains: string[]; resourceDomains: string[] } };
@@ -102,7 +105,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
 
     const buildChartOutputSchema = getBuildChartOutputSchema();
 
-    if (MCP_APP_BUILD_CHART_ENABLED) {
+    if (isMcpAppEnabled()) {
       registerAppTool(
         server,
         TOOL_NAME_CHART_BUILDER,
@@ -135,7 +138,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
     }
 
     // Always register the app resource so MCP Apps clients (e.g. basic-host) can connect.
-    // When MCP_APP_BUILD_CHART_ENABLED=false, buildChart is a normal tool without resourceUri,
+    // When isMcpAppEnabled() is false, buildChart is a normal tool without resourceUri,
     // so this resource is not used for chart display; it just satisfies resources/list.
     registerAppResource(
       server,
