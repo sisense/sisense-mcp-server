@@ -7,14 +7,12 @@ if (!INPUT) {
   throw new Error('INPUT environment variable is not set (e.g. INPUT=view.html)');
 }
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 export default defineConfig({
   plugins: [react(), viteSingleFile()],
   build: {
-    sourcemap: isDevelopment ? 'inline' : undefined,
-    cssMinify: !isDevelopment,
-    minify: !isDevelopment,
+    sourcemap: false,
+    cssMinify: true,
+    minify: true,
     rollupOptions: {
       input: INPUT,
     },

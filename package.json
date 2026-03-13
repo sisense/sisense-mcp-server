@@ -1,6 +1,6 @@
 {
   "name": "@sisense/mcp-server",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "mcpName": "io.github.sisense/sisense-mcp-server",
   "homepage": "https://github.com/sisense/sisense-mcp-server#readme",
   "description": "MCP server leveraging Sisense Intelligence for actionable insights and analytics.",
@@ -30,9 +30,9 @@
     "access": "public"
   },
   "scripts": {
-    "build": "cross-env INPUT=view.html vite build && bun build src/sse-server.ts --outdir dist --target node --format esm --splitting",
-    "build:view": "cross-env INPUT=view.html vite build",
-    "dev": "bun run --watch src/sse-server.ts",
+    "build": "cross-env NODE_ENV=production INPUT=view.html vite build && bun build src/sse-server.ts --outdir dist --target node --format esm --splitting",
+    "build:view": "cross-env NODE_ENV=production INPUT=view.html vite build",
+    "dev": "NODE_ENV=production bun run --watch src/sse-server.ts",
     "start": "bun run dist/sse-server.js",
     "test": "bun test --preload ./src/__test-helpers__/setup.ts ./src/**/*.test.ts",
     "test:e2e": "cross-env NODE_ENV=production bun test ./e2e/tests/*.test.ts",
@@ -47,8 +47,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.756.0",
     "@aws-sdk/s3-request-presigner": "^3.756.0",
-    "@modelcontextprotocol/ext-apps": "1.0.1",
-    "@modelcontextprotocol/sdk": "1.26.0",
+    "@modelcontextprotocol/ext-apps": "1.2.2",
+    "@modelcontextprotocol/sdk": "1.27.1",
     "@playwright/experimental-ct-react": "^1.56.1",
     "@playwright/test": "^1.56.1",
     "@sisense/sdk-ai-core": "0.5.1",
