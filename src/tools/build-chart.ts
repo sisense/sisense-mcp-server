@@ -63,7 +63,7 @@ export async function buildChart(
     const toolCallId = String(requestId ? `chart-${requestId}` : `chart-${Date.now()}`);
 
     const result = await csdkBrowserMock.withBrowserEnvironment(async () => {
-      const { buildChartEngine } = await import('@sisense/sdk-ai-core');
+      const { buildChartEngine, runWithUserAction } = await import('@sisense/sdk-ai-core');
       const { renderChartWidget } = await import('@/utils/widget-renderer/widget-renderer.js');
 
       const buildChartContext: BuildChartContext = {
@@ -77,9 +77,9 @@ export async function buildChart(
         openAIClient: sessionState?.get('openAIClient') as BuildChartContext['openAIClient'],
       };
 
-      const chartSummary = await buildChartEngine(
-        { dataSourceTitle, userPrompt },
-        buildChartContext,
+      // run with user action to collect telemetry and handle consumption quota
+      const chartSummary = await runWithUserAction('MCP', 'ASSISTANT', () =>
+        buildChartEngine({ dataSourceTitle, userPrompt }, buildChartContext),
       );
 
       console.info('>>> CHART SUMMARY', chartSummary);

@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import type { ChartWidgetProps, SisenseContextProviderProps } from '@sisense/sdk-ui';
 import { CustomSuperJSON } from '@sisense/sdk-ui/analytics-composer/node';
@@ -90,8 +90,7 @@ export async function renderChartWidgetWithPlaywrightCT(
     mkdirSync(screenshotsDir, { recursive: true });
 
     const chartTitleKebab = toKebabCase(config.outputName || 'untitled-widget');
-    const timestamp = Date.now().toString();
-    const customFilename = `widget-${chartTitleKebab}-${timestamp}.png`;
+    const customFilename = `widget-${chartTitleKebab}-${randomUUID()}.png`;
     screenshotPath = join(screenshotsDir, customFilename);
 
     // Resolve test file path relative to project root

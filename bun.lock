@@ -11,9 +11,9 @@
         "@modelcontextprotocol/sdk": "1.27.1",
         "@playwright/experimental-ct-react": "^1.56.1",
         "@playwright/test": "^1.56.1",
-        "@sisense/sdk-ai-core": "0.5.1",
-        "@sisense/sdk-data": "2.22.0",
-        "@sisense/sdk-ui": "2.22.0",
+        "@sisense/sdk-ai-core": "0.6.2",
+        "@sisense/sdk-data": "2.23.0",
+        "@sisense/sdk-ui": "2.23.0",
         "playwright": "^1.56.1",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
@@ -387,25 +387,25 @@
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.59.0", "", { "os": "win32", "cpu": "x64" }, "sha512-2HRCml6OztYXyJXAvdDXPKcawukWY2GpR5/nxKp4iBgiO3wcoEGkAaqctIbZcNB6KlUQBIqt8VYkNSj2397EfA=="],
 
-    "@sisense/sdk-ai-core": ["@sisense/sdk-ai-core@0.5.1", "", { "dependencies": { "@sisense/sdk-data": "^2.0.0", "@sisense/sdk-rest-client": "^2.0.0", "deepmerge": "^4.3.1", "fast-deep-equal": "^3.1.3", "nanoid": "^5.0.9", "openai": "^4.86.1", "tslib": "^2.8.1", "zod": "^3.24.1", "zod-to-json-schema": "^3.24.1" }, "peerDependencies": { "@sisense/sdk-ui": "^2.0.0" } }, "sha512-OkhjCRV20X51/sKRAS0x9aw+Ec37st5CalBqAbslUL9AUi4V2fQTKBTtjuBvgBIZF1QkXEN7HEaBpRaMTmVjBQ=="],
+    "@sisense/sdk-ai-core": ["@sisense/sdk-ai-core@0.6.2", "", { "dependencies": { "@sisense/sdk-data": "^2.0.0", "@sisense/sdk-rest-client": "^2.0.0", "deepmerge": "^4.3.1", "fast-deep-equal": "^3.1.3", "nanoid": "^5.0.9", "openai": "^4.86.1", "tslib": "^2.8.1", "yaml": "^2.8.2", "zod": "^3.24.1", "zod-to-json-schema": "^3.24.1" }, "peerDependencies": { "@sisense/sdk-ui": "^2.0.0" } }, "sha512-mX7EMFpTIv27TOKA4gHt/63xb06gWPZInj3tArI2VrenM20VM/E8w+YD4ESlDrgZzgxdZHsY15tkrflM19yWLw=="],
 
-    "@sisense/sdk-common": ["@sisense/sdk-common@2.22.0", "", { "dependencies": { "i18next": "23.3.0" } }, "sha512-onbPmUQquvvkb5VcPBVnMeKwFLJCwucnQVCp9rtONt2Eyrg7kzarrlhs2u0BeOY0ljh1TPMD64vaRlhb1UCZ9A=="],
+    "@sisense/sdk-common": ["@sisense/sdk-common@2.23.0", "", { "dependencies": { "i18next": "23.3.0" } }, "sha512-QmQPhTnpQYeKKG+Fab86t27zJ37CLv5LMAd7QULoqdTUUBjEy2uXV8WLlmFbr0iYGbYd/84tbA2IvO+iw8TzzA=="],
 
-    "@sisense/sdk-data": ["@sisense/sdk-data@2.22.0", "", { "dependencies": { "@sisense/sdk-common": "2.22.0", "hash-it": "^6.0.0", "lodash-es": "^4.17.21", "numeral": "^2.0.6" } }, "sha512-pY2s9GK+qjxLIY2lwxTslJ4+hgRaY74UduEGNOaO+nYYR6jnnD/Wo6/KSg0xi0HLgvEDBBIE6cFBRJxFlXS6Ug=="],
+    "@sisense/sdk-data": ["@sisense/sdk-data@2.23.0", "", { "dependencies": { "@sisense/sdk-common": "2.23.0", "hash-it": "^6.0.0", "lodash-es": "^4.17.21", "numeral": "^2.0.6" } }, "sha512-BLezRWt/+R8u1GVq5yXOI9i+xDT/sKJJ+DbbLfAFSNXDQJmBHC8UODnG4XWnx3Ng23bEuDokkpovwso7U4/7NA=="],
 
-    "@sisense/sdk-pivot-query-client": ["@sisense/sdk-pivot-query-client@2.22.0", "", { "dependencies": { "@sisense/sdk-data": "2.22.0", "@sisense/sdk-rest-client": "2.22.0", "lodash-es": "^4.17.21", "raf": "3.4.0", "socket.io-client": "^2.5.0", "uuid": "^13.0.0" } }, "sha512-GgZYCFZFcPJx9SG9ndthdGHLKOCBjiZQ5KeC6CoOZjnO9LRN/gfG7BNr0H4RH5kgx6rYwJpM4tiOsjgB3ar2JA=="],
+    "@sisense/sdk-pivot-query-client": ["@sisense/sdk-pivot-query-client@2.23.0", "", { "dependencies": { "@sisense/sdk-data": "2.23.0", "@sisense/sdk-rest-client": "2.23.0", "lodash-es": "^4.17.21", "raf": "3.4.0", "socket.io-client": "^2.5.0", "uuid": "^13.0.0" } }, "sha512-6iNvs/ZvQVhooR7qaDhEjwme7b8i7/AjiLKA8QPqGNduJfyYibMSjY2f0wEaDrBeFWXSmaNpBj+xXwdRhm/9Yw=="],
 
-    "@sisense/sdk-pivot-ui": ["@sisense/sdk-pivot-ui@2.22.0", "", { "dependencies": { "@sisense/sdk-common": "2.22.0", "@sisense/sdk-data": "2.22.0", "@sisense/sdk-pivot-query-client": "2.22.0", "@sisense/sdk-rest-client": "2.22.0", "@sisense/sdk-shared-ui": "2.22.0", "classnames": "2.3.2", "dom-css": "2.1.0", "dompurify": "^3.3.0", "immer": "^10.0.2", "lodash-es": "^4.17.21", "raf": "3.4.0", "socket.io-client": "^2.5.0", "uuid": "^13.0.0" }, "peerDependencies": { "@emotion/cache": "^11.0.0", "@emotion/react": "^11.0.0", "@emotion/styled": "^11.0.0", "react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-qUXuqQ1lTPYh4OnvBNQQrxsPfE9CM/1q08w0nwwSefilyGI/hqkvt/4j8ny1NfR7ertiZ4IFhUn9bbi/XVW1cw=="],
+    "@sisense/sdk-pivot-ui": ["@sisense/sdk-pivot-ui@2.23.0", "", { "dependencies": { "@sisense/sdk-common": "2.23.0", "@sisense/sdk-data": "2.23.0", "@sisense/sdk-pivot-query-client": "2.23.0", "@sisense/sdk-rest-client": "2.23.0", "@sisense/sdk-shared-ui": "2.23.0", "classnames": "2.3.2", "dom-css": "2.1.0", "dompurify": "^3.3.0", "immer": "^10.0.2", "lodash-es": "^4.17.21", "raf": "3.4.0", "socket.io-client": "^2.5.0", "uuid": "^13.0.0" }, "peerDependencies": { "@emotion/cache": "^11.0.0", "@emotion/react": "^11.0.0", "@emotion/styled": "^11.0.0", "react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-9TqsVIppFIJREBfqFLeDeiomimCRLPWd5gUFKMBevkOBPZkEMSyEr83VEloxH2HBavd7bPpVKT44e2L6GQgDfg=="],
 
-    "@sisense/sdk-query-client": ["@sisense/sdk-query-client@2.22.0", "", { "dependencies": { "@sisense/sdk-common": "2.22.0", "@sisense/sdk-data": "2.22.0", "@sisense/sdk-pivot-query-client": "2.22.0", "@sisense/sdk-rest-client": "2.22.0", "@sisense/task-manager": "^0.1.0", "numeral": "^2.0.6", "ts-deepmerge": "6.0.2", "uuid": "^13.0.0" } }, "sha512-wPK5BjMoTaABj7af14Xtu/6MHkjXfpSJ9dHSq2ihVwwoUymu8RqmMIJSdS4nYLwwMnzU1tOvhoKd/a9IWYM25Q=="],
+    "@sisense/sdk-query-client": ["@sisense/sdk-query-client@2.23.0", "", { "dependencies": { "@sisense/sdk-common": "2.23.0", "@sisense/sdk-data": "2.23.0", "@sisense/sdk-pivot-query-client": "2.23.0", "@sisense/sdk-rest-client": "2.23.0", "@sisense/task-manager": "^0.1.0", "numeral": "^2.0.6", "ts-deepmerge": "6.0.2", "uuid": "^13.0.0" } }, "sha512-o1F7C0Y3Gu+6kXrNUVmgS94tfZqlDLoxSfkIRpYDvi6uFyoy4DszhEyUuKAmu0sefg71zKeKGa9cSH54dhdpjg=="],
 
     "@sisense/sdk-rest-client": ["@sisense/sdk-rest-client@2.22.0", "", { "dependencies": { "@sisense/sdk-common": "2.22.0" } }, "sha512-wmc+WdlmS6nLQEb73lRRlhQCMwIkALoKE2LAqrpyHu5hFcmabdKSQ8lkM68yf02rzCIKZbOb5/28Tey66YxOuA=="],
 
-    "@sisense/sdk-shared-ui": ["@sisense/sdk-shared-ui@2.22.0", "", { "dependencies": { "@emotion/cache": "11.11.0", "@emotion/react": "11.11.4", "@emotion/styled": "11.11.0", "@mui/material": "^6.4.11", "@mui/utils": "^6.4.9", "@rc-component/tooltip": "^1.2.0", "classnames": "^2.5.1", "prop-types": "^15.8.1", "react-use": "^17.6.0", "simplebar-react": "^3.3.2" }, "peerDependencies": { "react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-kaVRRy5ZfzbRv/NiuGyY9nJ0pQUw53oi9O+ipJhGOsXFTonREsVp8UrtvR/N8euxYSlgU2Iv9Y/c+vXFcUut9A=="],
+    "@sisense/sdk-shared-ui": ["@sisense/sdk-shared-ui@2.23.0", "", { "dependencies": { "@emotion/cache": "11.11.0", "@emotion/react": "11.11.4", "@emotion/styled": "11.11.0", "@mui/material": "^6.4.11", "@mui/utils": "^6.4.9", "@rc-component/tooltip": "^1.2.0", "classnames": "^2.5.1", "prop-types": "^15.8.1", "react-use": "^17.6.0", "simplebar-react": "^3.3.2" }, "peerDependencies": { "react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-3qbVeuSa0URQieXAWntkslSNSNC8XwYnfacKfSBBS6r1N/6FfEZIRaZkNC8wGzq72RKtk5ae1TdSWyVUWA/kbQ=="],
 
-    "@sisense/sdk-tracking": ["@sisense/sdk-tracking@2.22.0", "", { "dependencies": { "@sisense/sdk-rest-client": "2.22.0" } }, "sha512-20p0Ctb276kO//eyhJdq+ZyD58twa8QjFud2NCeU100MeeatdD6puE8ZXnmi/9VNu+cgBtt5f11RDPGOul4xZw=="],
+    "@sisense/sdk-tracking": ["@sisense/sdk-tracking@2.23.0", "", { "dependencies": { "@sisense/sdk-rest-client": "2.23.0" } }, "sha512-Osw+VuNtd+dqusMol6WfDvwUA837Yit9Abrbihn7q5lsbVIdGCJ6NblBsm+9WYWTiSC3w2YmwNNT64VlcxgaCg=="],
 
-    "@sisense/sdk-ui": ["@sisense/sdk-ui@2.22.0", "", { "dependencies": { "@dnd-kit/core": "^6.3.1", "@dnd-kit/modifiers": "^9.0.0", "@dnd-kit/sortable": "^10.0.0", "@dnd-kit/utilities": "^3.2.2", "@emotion/cache": "^11.14.0", "@emotion/react": "^11.14.0", "@emotion/styled": "^11.14.0", "@mui/icons-material": "^6.4.11", "@mui/material": "^6.4.11", "@mui/system": "^6.4.11", "@sisense/sdk-common": "2.22.0", "@sisense/sdk-data": "2.22.0", "@sisense/sdk-pivot-query-client": "2.22.0", "@sisense/sdk-pivot-ui": "2.22.0", "@sisense/sdk-query-client": "2.22.0", "@sisense/sdk-rest-client": "2.22.0", "@sisense/sdk-tracking": "2.22.0", "@sisense/sisense-charts": "5.2.5", "@tanstack/react-query": "4.43.0", "classnames": "^2.3.2", "colorjs.io": "^0.4.3", "date-fns": "^2.29.3", "date-fns-tz": "^2.0.0", "dayjs": "^1.11.7", "deepmerge": "^4.3.1", "dompurify": "^3.1.6", "fixed-data-table-2": "^2.0.21", "geojson": "^0.5.0", "highcharts-react-official": "^3.2.1", "highcharts-rounded-corners": "^1.0.7", "immer": "^10.0.2", "leaflet": "^1.9.4", "lodash-es": "^4.17.21", "markdown-to-jsx": "^7.7.6", "proj4leaflet": "^1.0.2", "react-datepicker": "^8.4.0", "react-error-boundary": "^4.0.11", "react-i18next": "^13.2.2", "react-number-format": "^5.4.0", "semver": "^7.7.4", "superjson": "^2.2.2", "ts-deepmerge": "6.0.2", "ts-essentials": "^9.3.0", "uuid": "^13.0.0", "whatwg-fetch": "^3.6.2", "yaml": "^2.4.5" }, "peerDependencies": { "react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-RY/QDP/ta3QW6dhEmXMKGdUfnazsI5PxnDWzcctkyeQZ657I8avMjGTtXRjPeVTlWGngIhWYFHrCvZ1+itwkVg=="],
+    "@sisense/sdk-ui": ["@sisense/sdk-ui@2.23.0", "", { "dependencies": { "@dnd-kit/core": "^6.3.1", "@dnd-kit/modifiers": "^9.0.0", "@dnd-kit/sortable": "^10.0.0", "@dnd-kit/utilities": "^3.2.2", "@emotion/cache": "^11.14.0", "@emotion/react": "^11.14.0", "@emotion/styled": "^11.14.0", "@mui/icons-material": "^6.4.11", "@mui/material": "^6.4.11", "@mui/system": "^6.4.11", "@sisense/sdk-common": "2.23.0", "@sisense/sdk-data": "2.23.0", "@sisense/sdk-pivot-query-client": "2.23.0", "@sisense/sdk-pivot-ui": "2.23.0", "@sisense/sdk-query-client": "2.23.0", "@sisense/sdk-rest-client": "2.23.0", "@sisense/sdk-tracking": "2.23.0", "@sisense/sisense-charts": "5.2.5", "@tanstack/react-query": "4.43.0", "classnames": "^2.3.2", "colorjs.io": "^0.4.3", "date-fns": "^2.29.3", "date-fns-tz": "^2.0.0", "dayjs": "^1.11.7", "deepmerge": "^4.3.1", "dompurify": "^3.1.6", "fixed-data-table-2": "^2.0.21", "geojson": "^0.5.0", "highcharts-react-official": "^3.2.1", "highcharts-rounded-corners": "^1.0.7", "immer": "^10.0.2", "leaflet": "^1.9.4", "lodash-es": "^4.17.21", "markdown-to-jsx": "^7.7.6", "proj4leaflet": "^1.0.2", "react-datepicker": "^8.4.0", "react-error-boundary": "^4.0.11", "react-i18next": "^13.2.2", "react-number-format": "^5.4.0", "semver": "^7.7.4", "superjson": "^2.2.2", "ts-deepmerge": "6.0.2", "ts-essentials": "^9.3.0", "uuid": "^13.0.0", "whatwg-fetch": "^3.6.2", "yaml": "^2.4.5" }, "peerDependencies": { "react": "^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-FKaAseSI0rtEtEkSm5xNDuZoIUrgjxbM0OoELjsspXipab1fRwt/uEQfBeqBNGqgQqgbAX3ZLKLsEB6TshN0Ng=="],
 
     "@sisense/sisense-charts": ["@sisense/sisense-charts@5.2.5", "", { "dependencies": { "@emotion/css": "^11.9.0", "highcharts": "10.3.3", "lodash-es": "^4.17.21" } }, "sha512-K0H21diDd0np7BZECS4vV5ydpU3gYGdWJujeyjTX5J6JRiLSN/KFVj4Hb3h967Fs+NcaZQOERjEXX0swsCKU/Q=="],
 
@@ -850,8 +850,6 @@
     "gopd": ["gopd@1.2.0", "", {}, "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg=="],
 
     "graphemer": ["graphemer@1.4.0", "", {}, "sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag=="],
-
-    "guid-typescript": ["guid-typescript@1.0.9", "", {}, "sha512-Y8T4vYhEfwJOTbouREvG+3XDsjr8E3kIr7uf+JZ0BYloFsttiHU0WfvANVsR7TxNUJa/WpCnw/Ino/p+DeBhBQ=="],
 
     "has-binary2": ["has-binary2@1.0.3", "", { "dependencies": { "isarray": "2.0.1" } }, "sha512-G1LWKhDSvhGeAQ8mPVQlqNcOB2sJdwATtZKl2pDKKHfpf/rYj24lkinxf69blJbnsvtqqNU+L3SL50vzZhXOnw=="],
 
@@ -1327,15 +1325,25 @@
 
     "@reduxjs/toolkit/reselect": ["reselect@5.1.1", "", {}, "sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w=="],
 
-    "@sisense/sdk-ai-core/@sisense/sdk-data": ["@sisense/sdk-data@2.20.0", "", { "dependencies": { "@sisense/sdk-common": "2.20.0", "guid-typescript": "^1.0.9", "hash-it": "^6.0.0", "lodash-es": "^4.17.21", "numeral": "^2.0.6" } }, "sha512-1Ym67iJ8ydd9MvEa8TdryKetrbXFJASTGp+XvMj1cCx/vXczNQL+1kA+HErpSudM9MCNNGmQIUDrTNn0FMftSA=="],
+    "@sisense/sdk-pivot-query-client/@sisense/sdk-rest-client": ["@sisense/sdk-rest-client@2.23.0", "", { "dependencies": { "@sisense/sdk-common": "2.23.0" } }, "sha512-YOoHkokb7c6GpAFSHAuYmXqn68N0HQ7bQsHt1jmMdVRdQvsAZQiEapIQeuxeMaO0rbu5wJFwWoeyDwD8lbmmoA=="],
+
+    "@sisense/sdk-pivot-ui/@sisense/sdk-rest-client": ["@sisense/sdk-rest-client@2.23.0", "", { "dependencies": { "@sisense/sdk-common": "2.23.0" } }, "sha512-YOoHkokb7c6GpAFSHAuYmXqn68N0HQ7bQsHt1jmMdVRdQvsAZQiEapIQeuxeMaO0rbu5wJFwWoeyDwD8lbmmoA=="],
 
     "@sisense/sdk-pivot-ui/classnames": ["classnames@2.3.2", "", {}, "sha512-CSbhY4cFEJRe6/GQzIk5qXZ4Jeg5pcsP7b5peFSDpffpe1cqjASH/n9UTjBwOp6XpMSTwQ8Za2K5V02ueA7Tmw=="],
+
+    "@sisense/sdk-query-client/@sisense/sdk-rest-client": ["@sisense/sdk-rest-client@2.23.0", "", { "dependencies": { "@sisense/sdk-common": "2.23.0" } }, "sha512-YOoHkokb7c6GpAFSHAuYmXqn68N0HQ7bQsHt1jmMdVRdQvsAZQiEapIQeuxeMaO0rbu5wJFwWoeyDwD8lbmmoA=="],
+
+    "@sisense/sdk-rest-client/@sisense/sdk-common": ["@sisense/sdk-common@2.22.0", "", { "dependencies": { "i18next": "23.3.0" } }, "sha512-onbPmUQquvvkb5VcPBVnMeKwFLJCwucnQVCp9rtONt2Eyrg7kzarrlhs2u0BeOY0ljh1TPMD64vaRlhb1UCZ9A=="],
 
     "@sisense/sdk-shared-ui/@emotion/cache": ["@emotion/cache@11.11.0", "", { "dependencies": { "@emotion/memoize": "^0.8.1", "@emotion/sheet": "^1.2.2", "@emotion/utils": "^1.2.1", "@emotion/weak-memoize": "^0.3.1", "stylis": "4.2.0" } }, "sha512-P34z9ssTCBi3e9EI1ZsWpNHcfY1r09ZO0rZbRO2ob3ZQMnFI35jB536qoXbkdesr5EUhYi22anuEJuyxifaqAQ=="],
 
     "@sisense/sdk-shared-ui/@emotion/react": ["@emotion/react@11.11.4", "", { "dependencies": { "@babel/runtime": "^7.18.3", "@emotion/babel-plugin": "^11.11.0", "@emotion/cache": "^11.11.0", "@emotion/serialize": "^1.1.3", "@emotion/use-insertion-effect-with-fallbacks": "^1.0.1", "@emotion/utils": "^1.2.1", "@emotion/weak-memoize": "^0.3.1", "hoist-non-react-statics": "^3.3.1" }, "peerDependencies": { "react": ">=16.8.0" } }, "sha512-t8AjMlF0gHpvvxk5mAtCqR4vmxiGHCeJBaQO6gncUSdklELOgtwjerNY2yuJNfwnc6vi16U/+uMF+afIawJ9iw=="],
 
     "@sisense/sdk-shared-ui/@emotion/styled": ["@emotion/styled@11.11.0", "", { "dependencies": { "@babel/runtime": "^7.18.3", "@emotion/babel-plugin": "^11.11.0", "@emotion/is-prop-valid": "^1.2.1", "@emotion/serialize": "^1.1.2", "@emotion/use-insertion-effect-with-fallbacks": "^1.0.1", "@emotion/utils": "^1.2.1" }, "peerDependencies": { "@emotion/react": "^11.0.0-rc.0", "react": ">=16.8.0" } }, "sha512-hM5Nnvu9P3midq5aaXj4I+lnSfNi7Pmd4EWk1fOZ3pxookaQTNew6bp4JaCBYM4HVFZF9g7UjJmsUmC2JlxOng=="],
+
+    "@sisense/sdk-tracking/@sisense/sdk-rest-client": ["@sisense/sdk-rest-client@2.23.0", "", { "dependencies": { "@sisense/sdk-common": "2.23.0" } }, "sha512-YOoHkokb7c6GpAFSHAuYmXqn68N0HQ7bQsHt1jmMdVRdQvsAZQiEapIQeuxeMaO0rbu5wJFwWoeyDwD8lbmmoA=="],
+
+    "@sisense/sdk-ui/@sisense/sdk-rest-client": ["@sisense/sdk-rest-client@2.23.0", "", { "dependencies": { "@sisense/sdk-common": "2.23.0" } }, "sha512-YOoHkokb7c6GpAFSHAuYmXqn68N0HQ7bQsHt1jmMdVRdQvsAZQiEapIQeuxeMaO0rbu5wJFwWoeyDwD8lbmmoA=="],
 
     "@sisense/task-manager/uuid": ["uuid@8.3.2", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="],
 
@@ -1384,8 +1392,6 @@
     "@aws-crypto/util/@smithy/util-utf8/@smithy/util-buffer-from": ["@smithy/util-buffer-from@2.2.0", "", { "dependencies": { "@smithy/is-array-buffer": "^2.2.0", "tslib": "^2.6.2" } }, "sha512-IJdWBbTcMQ6DA0gdNhh/BwrLkDR+ADW5Kr1aZmd4k3DIF6ezMV4R2NIAmT08wQJ3yUK82thHWmC/TnK/wpMMIA=="],
 
     "@modelcontextprotocol/sdk/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
-
-    "@sisense/sdk-ai-core/@sisense/sdk-data/@sisense/sdk-common": ["@sisense/sdk-common@2.20.0", "", { "dependencies": { "i18next": "23.3.0" } }, "sha512-j49EJfbLui/UuVbSafXOV+TVSVNTrAg+ol8nlLeiu2odxcB0fmn40Sefedwxk3x7mkzcKTHXZ0+cyu9MCILj0g=="],
 
     "@sisense/sdk-shared-ui/@emotion/cache/@emotion/memoize": ["@emotion/memoize@0.8.1", "", {}, "sha512-W2P2c/VRW1/1tLox0mVUalvnWXxavmv/Oum2aPsRcoDJuob75FC3Y8FbpfLwUegRcxINtGUMPq0tFCvYNTBXNA=="],
 

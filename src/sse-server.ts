@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { createHash, randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -10,6 +11,12 @@ import { initializeSisenseClients } from './initialize-sisense-clients.js';
 import type { SessionState } from './types/sessions.js';
 import { setupMcpServer } from './mcp-server.js';
 import { sanitizeError, validateUrl, validateToken } from './utils/string-utils.js';
+
+const PACKAGE_VERSION = (
+  JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as {
+    version: string;
+  }
+).version;
 
 // S3 client for proxying screenshots (if configured)
 function createS3Client(): S3Client | null {
@@ -48,6 +55,7 @@ const server = createServer(async (req, res) => {
     res.end(
       JSON.stringify({
         status: 'ok',
+        version: PACKAGE_VERSION,
         activeSessions: sessions.size,
       }),
     );
@@ -58,6 +66,13 @@ const server = createServer(async (req, res) => {
   if (url.pathname.startsWith('/screenshots/') && req.method === 'GET') {
     try {
       const filename = url.pathname.replace('/screenshots/', '');
+
+      // Reject empty filenames (prevents S3 bucket listing via empty key)
+      if (!filename) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Screenshot not found');
+        return;
+      }
 
       // Validate filename (prevent path traversal)
       if (filename.includes('/') || filename.includes('..')) {
@@ -190,10 +205,13 @@ const server = createServer(async (req, res) => {
                 initializeHttpClient,
                 initializeOpenAIClient,
               } = await import('@sisense/sdk-ai-core');
-              const httpClient = createHttpClientFromConfig({
-                url: validatedUrl,
-                token: validatedToken,
-              });
+              const httpClient = createHttpClientFromConfig(
+                {
+                  url: validatedUrl,
+                  token: validatedToken,
+                },
+                { 'x-sisense-origin': 'mcp-server' },
+              );
               // Initialize the httpClient (required before use)
               if (initializeHttpClient) {
                 initializeHttpClient(httpClient);

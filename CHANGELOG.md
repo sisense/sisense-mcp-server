@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.7] - 2026-03-19
+
+### Changed
+
+- Upgrade `@sisense/sdk-ai-core` to v0.6.2
+- Restore telemetry headers
+
+## [0.2.6] - 2026-03-12
+
+### Changed
+
+- Update dependencies and improve build scripts for production (SNS-0)
+
+## [0.2.5] - 2026-03-12
+
+### Changed
+
+- Update end-to-end tests and add visual test case for analytics app rendering
+
 ## [0.2.4] - 2026-03-12
 
 ### Changed
