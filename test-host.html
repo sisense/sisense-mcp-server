@@ -9,6 +9,9 @@
     <iframe id="app" src="/view.html" style="width:1000px;height:600px;border:none"></iframe>
     <script>
       const iframe = document.getElementById('app');
+      // chartId -> JSON string payload, set by test before sending tool result
+      const chartPayloads = {};
+
       window.addEventListener('message', (e) => {
         const msg = e.data;
         if (msg?.jsonrpc !== '2.0') return;
@@ -29,6 +32,29 @@
         if (msg.method === 'ui/notifications/initialized') {
           window._appReady = true;
         }
+
+        if (msg.method === 'resources/read') {
+          const uri = msg.params?.uri ?? '';
+          const match = uri.match(/\/chart\/([^/?#]+)$/);
+          const chartId = match?.[1];
+          const payloadText = chartId ? chartPayloads[chartId] : undefined;
+
+          if (payloadText) {
+            iframe.contentWindow.postMessage({
+              jsonrpc: '2.0',
+              id: msg.id,
+              result: {
+                contents: [{ uri, mimeType: 'application/json', text: payloadText }]
+              }
+            }, '*');
+          } else {
+            iframe.contentWindow.postMessage({
+              jsonrpc: '2.0',
+              id: msg.id,
+              error: { code: -32001, message: `Chart not found: ${chartId}` }
+            }, '*');
+          }
+        }
       });
 
       window.sendToolResult = function(result) {
@@ -37,6 +63,11 @@
           method: 'ui/notifications/tool-result',
           params: result
         }, '*');
+      };
+
+      // Called by the test before sendToolResult to register chart payload
+      window.setChartPayload = function(chartId, payloadText) {
+        chartPayloads[chartId] = payloadText;
       };
     </script>
   </body>

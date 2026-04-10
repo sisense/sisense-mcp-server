@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.9] - 2026-04-09
+
+### Changed
+
+- Remove credentials from `buildChart` tool response `_meta`; chart payload is now stored server-side and fetched by the analytics app via MCP resource
+
 ## [0.2.7] - 2026-03-19
 
 ### Changed

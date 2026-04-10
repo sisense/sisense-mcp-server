@@ -81,14 +81,8 @@ describe('Build Chart Tool E2E', () => {
         }
       }
 
-      // Credentials are in _meta (for MCP App mode)
-      const meta = result._meta as Record<string, unknown> | undefined;
-      if (meta) {
-        expect(meta).toHaveProperty('sisenseUrl');
-        expect(meta).toHaveProperty('sisenseToken');
-        expect(typeof meta.sisenseUrl).toBe('string');
-        expect(typeof meta.sisenseToken).toBe('string');
-      }
+      // Credentials are stored server-side; _meta is not included in the response
+      expect(result._meta).toBeUndefined();
     },
     { timeout: 60000 },
   );

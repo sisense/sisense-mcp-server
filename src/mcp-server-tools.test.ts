@@ -79,7 +79,7 @@ describe('MCP Server - Tool Calls via Client', () => {
       expect(typeof structured.message).toBe('string');
     });
 
-    it('includes _meta with credentials in app mode', async () => {
+    it('does not include _meta in tool response and chart payload is fetchable via resource', async () => {
       const { client } = await createMockMcpFixture();
 
       const result = await client.callTool({
@@ -90,11 +90,21 @@ describe('MCP Server - Tool Calls via Client', () => {
         },
       });
 
-      const meta = result._meta as Record<string, unknown>;
-      expect(meta).toBeDefined();
-      expect(meta.sisenseUrl).toBe('https://mock.sisense.com');
-      expect(meta.sisenseToken).toBe('mock-token-abc123');
-      expect(meta.serializedWidgetProps).toBeDefined();
+      expect(result._meta).toBeUndefined();
+
+      const structured = result.structuredContent as Record<string, unknown>;
+      const chartId = structured.chartId as string;
+      expect(chartId).toBe(MOCK_CHART_ID);
+
+      const resource = await client.readResource({
+        uri: `ui://sisense-analytics/chart/${chartId}`,
+      });
+      const text = (resource.contents[0] as { text?: string }).text;
+      expect(text).toBeDefined();
+      const payload = JSON.parse(text!) as Record<string, unknown>;
+      expect(payload.sisenseUrl).toBe('https://mock.sisense.com');
+      expect(payload.sisenseToken).toBe('mock-token-abc123');
+      expect(payload.serializedWidgetProps).toBeDefined();
     });
 
     it('updates session state with chart summaries', async () => {

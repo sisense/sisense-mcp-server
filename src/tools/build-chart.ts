@@ -3,11 +3,17 @@ import type {
   ChartSummary,
   ExtendedChartWidgetProps,
 } from '@sisense/sdk-ai-core';
-import type { HttpClient } from '@sisense/sdk-rest-client';
 import type { RequestId } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { csdkBrowserMock } from '@/utils/csdk-browser-mock';
 import type { SessionState } from '../types/sessions.js';
+import {
+  getSessionBaseUrl,
+  getSessionHttpClient,
+  getSessionOpenAIClient,
+  getSessionSisenseToken,
+  getSessionSisenseUrl,
+} from '../utils/sisense-session.js';
 import { sanitizeError } from '../utils/string-utils.js';
 import { CustomSuperJSON } from '@sisense/sdk-ui/analytics-composer/node';
 
@@ -60,6 +66,9 @@ export async function buildChart(
   try {
     const { dataSourceTitle, userPrompt } = args;
 
+    const httpClient = getSessionHttpClient(sessionState);
+    const openAIClient = getSessionOpenAIClient(sessionState);
+
     const toolCallId = String(requestId ? `chart-${requestId}` : `chart-${Date.now()}`);
 
     const result = await csdkBrowserMock.withBrowserEnvironment(async () => {
@@ -73,8 +82,8 @@ export async function buildChart(
         retrieveChart: (id) => (sessionState?.get(id) as ExtendedChartWidgetProps) ?? null,
         saveChart: (id, props) => sessionState?.set(id, props),
         isNlqV3Enabled: true,
-        httpClient: sessionState?.get('httpClient') as HttpClient | undefined,
-        openAIClient: sessionState?.get('openAIClient') as BuildChartContext['openAIClient'],
+        httpClient,
+        openAIClient,
       };
 
       // run with user action to collect telemetry and handle consumption quota
@@ -91,20 +100,8 @@ export async function buildChart(
         | undefined;
 
       if (savedProps) {
-        const sisenseUrl = sessionState?.get('sisenseUrl') as string | undefined;
-        const sisenseToken = sessionState?.get('sisenseToken') as string | undefined;
-        const baseUrl = sessionState?.get('baseUrl') as string | undefined;
-        const httpClient = sessionState?.get('httpClient') as HttpClient | undefined;
-
-        if (!sisenseUrl || !sisenseToken) {
-          throw new Error(
-            'Sisense credentials not found in session. Provide sisenseUrl and sisenseToken as URL params.',
-          );
-        }
-
-        if (!baseUrl) {
-          throw new Error('Base URL not found in session.');
-        }
+        const sisenseUrl = getSessionSisenseUrl(sessionState);
+        const sisenseToken = getSessionSisenseToken(sessionState);
 
         // Run insights API only when narrative enabled; optionally run image render (skip when MCP App mode)
         const narrativeEnabled = isNarrativeEnabled();
@@ -120,7 +117,7 @@ export async function buildChart(
               widgetProps: savedProps,
               sisenseUrl,
               sisenseToken,
-              baseUrl,
+              baseUrl: getSessionBaseUrl(sessionState),
             });
 
         const [insightsResult, renderResult] = await Promise.allSettled([
@@ -146,13 +143,23 @@ export async function buildChart(
           console.warn('Failed to render chart widget:', sanitized.message);
         }
 
+        const serializedWidgetProps = CustomSuperJSON.serialize(savedProps);
+
+        if (isMcpAppEnabled() && sisenseUrl && sisenseToken) {
+          sessionState?.set(`chart:payload:${chartSummary.chartId}`, {
+            sisenseUrl,
+            sisenseToken,
+            serializedWidgetProps,
+          });
+        }
+
         return {
           chartSummary,
           imageUrl,
           insights,
           sisenseUrl,
           sisenseToken,
-          serializedWidgetProps: CustomSuperJSON.serialize(savedProps),
+          serializedWidgetProps,
         };
       }
 
@@ -166,8 +173,7 @@ export async function buildChart(
       };
     });
 
-    const { chartSummary, imageUrl, insights, sisenseUrl, sisenseToken, serializedWidgetProps } =
-      result;
+    const { chartSummary, imageUrl, insights } = result;
 
     const output: Record<string, unknown> = {
       success: true,
@@ -185,15 +191,6 @@ export async function buildChart(
         },
       ],
       structuredContent: output,
-      ...(isMcpAppEnabled()
-        ? {
-            _meta: {
-              sisenseUrl,
-              sisenseToken,
-              serializedWidgetProps,
-            },
-          }
-        : {}),
     };
 
     return finalOutput;

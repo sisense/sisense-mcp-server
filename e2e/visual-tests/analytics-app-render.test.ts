@@ -15,7 +15,7 @@ describe('Analytics App Render E2E', () => {
   const savedEnv: Record<string, string | undefined> = {};
 
   beforeAll(async () => {
-    // Force MCP App mode so buildChart returns _meta with serializedWidgetProps
+    // Force MCP App mode so buildChart stores chart payload in session state
     savedEnv.TOOL_CHART_BUILDER_MCP_APP_ENABLED = process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
     process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = 'true';
     await setupE2ETests();
@@ -24,7 +24,7 @@ describe('Analytics App Render E2E', () => {
   it(
     'should render an interactive chart via the MCP App protocol',
     async () => {
-      // 1. Call buildChart via MCP to get a real tool result with _meta
+      // 1. Call buildChart via MCP to get chartId from structuredContent
       const { TOOL_NAME_CHART_BUILDER } = await import('@sisense/sdk-ai-core');
       const { client } = await createMcpTestFixture();
 
@@ -39,31 +39,28 @@ describe('Analytics App Render E2E', () => {
       expect(result).toBeDefined();
       assertNoError(result);
 
-      // 2. Verify the result has _meta with required fields for MCP App
-      const meta = result._meta as Record<string, unknown> | undefined;
-      expect(meta).toBeDefined();
-      expect(meta).toHaveProperty('sisenseUrl');
-      expect(meta).toHaveProperty('sisenseToken');
-      expect(meta).toHaveProperty('serializedWidgetProps');
+      // 2. Extract chartId and fetch payload via resource (credentials stay server-side)
+      const structured = result.structuredContent as Record<string, unknown> | undefined;
+      expect(structured).toHaveProperty('chartId');
+      const chartId = structured!.chartId as string;
 
-      // 3. Persist only the minimal fields Playwright/app need (no full result with token in extra keys)
-      if (!meta) throw new Error('_meta required for Playwright payload');
+      const resource = await client.readResource({
+        uri: `ui://sisense-analytics/chart/${chartId}`,
+      });
+      const payloadText = (resource.contents[0] as { text?: string }).text;
+      expect(payloadText).toBeDefined();
+
+      // 3. Persist the tool result + chart payload for Playwright
       const testId = randomBytes(8).toString('hex');
       const testDir = join(tmpdir(), `analytics-app-${testId}`);
       const toolResultPath = join(testDir, 'tool-result.json');
       try {
         mkdirSync(testDir, { recursive: true });
-        const minimalResult = {
-          _meta: {
-            sisenseUrl: meta.sisenseUrl,
-            sisenseToken: meta.sisenseToken,
-            serializedWidgetProps: meta.serializedWidgetProps,
-          },
-        };
-        writeFileSync(toolResultPath, JSON.stringify(minimalResult), {
-          encoding: 'utf8',
-          mode: 0o600,
-        });
+        writeFileSync(
+          toolResultPath,
+          JSON.stringify({ toolResult: result, chartId, chartPayload: payloadText }),
+          { encoding: 'utf8', mode: 0o600 },
+        );
 
         // 4. Spawn Playwright to run the browser test
         const projectRoot = process.cwd();

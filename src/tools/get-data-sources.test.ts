@@ -1,6 +1,7 @@
 import { describe, it, expect, mock } from 'bun:test';
 import { getDataSources } from './get-data-sources.js';
 import { createMockSessionState } from '@/__test-helpers__/mock-session-state.js';
+import { MISSING_SISENSE_SESSION_MESSAGE } from '@/utils/sisense-session.js';
 
 describe('getDataSources', () => {
   it('returns data sources on success', async () => {
@@ -23,11 +24,12 @@ describe('getDataSources', () => {
     expect(result.content[0].text).toContain('Available data sources');
   });
 
-  it('works with undefined sessionState', async () => {
+  it('returns isError when session has no httpClient', async () => {
     const result = await getDataSources({}, undefined);
 
-    expect(result.isError).toBe(false);
-    expect(result.structuredContent.dataSources).toBeArray();
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent.dataSources).toEqual([]);
+    expect(result.content[0].text).toContain(MISSING_SISENSE_SESSION_MESSAGE);
   });
 
   it('returns isError true and empty dataSources when engine throws', async () => {

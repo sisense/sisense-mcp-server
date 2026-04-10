@@ -3,7 +3,7 @@ import {
   registerAppTool,
   RESOURCE_MIME_TYPE,
 } from '@modelcontextprotocol/ext-apps/server';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -163,6 +163,30 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
 
     // Register prompts for guided workflows
     registerPrompts(server);
+
+    // Register resource template for chart data (used by analytics app to fetch
+    // credentials server-side instead of relying on _meta in tool response)
+    server.registerResource(
+      'chart-data',
+      new ResourceTemplate('ui://sisense-analytics/chart/{chartId}', { list: undefined }),
+      { mimeType: 'application/json' },
+      async (uri, vars) => {
+        const chartId = String(vars.chartId);
+        const payload = sessionState?.get(`chart:payload:${chartId}`);
+        if (!payload) {
+          throw new Error(`Chart data not found for chartId: ${chartId}`);
+        }
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: 'application/json',
+              text: JSON.stringify(payload),
+            },
+          ],
+        };
+      },
+    );
 
     return server;
   } catch (error) {

@@ -2,6 +2,7 @@ import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
 import { buildChart } from './build-chart.js';
 import { createMockSessionState } from '@/__test-helpers__/mock-session-state.js';
 import { MOCK_CHART_ID } from '@/__test-helpers__/mock-engines.js';
+import { MISSING_SISENSE_SESSION_MESSAGE } from '@/utils/sisense-session.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyResult = Record<string, any>;
@@ -51,7 +52,22 @@ describe('buildChart - MCP App Mode (default)', () => {
     expect(structured).not.toHaveProperty('imageUrl');
   });
 
-  it('includes _meta with sisenseUrl, sisenseToken, serializedWidgetProps', async () => {
+  it('stores chart payload in session state with sisenseUrl, sisenseToken, serializedWidgetProps', async () => {
+    const sessionState = createMockSessionState();
+
+    await buildChart(
+      { dataSourceTitle: 'Sample ECommerce', userPrompt: 'show revenue' },
+      sessionState,
+    );
+
+    const payload = sessionState.get(`chart:payload:${MOCK_CHART_ID}`) as Record<string, unknown>;
+    expect(payload).toBeDefined();
+    expect(payload.sisenseUrl).toBe('https://mock.sisense.com');
+    expect(payload.sisenseToken).toBe('mock-token-abc123');
+    expect(payload.serializedWidgetProps).toBeDefined();
+  });
+
+  it('does not include _meta in the tool response', async () => {
     const sessionState = createMockSessionState();
 
     const result: AnyResult = await buildChart(
@@ -59,11 +75,7 @@ describe('buildChart - MCP App Mode (default)', () => {
       sessionState,
     );
 
-    expect(result._meta).toBeDefined();
-    const meta = result._meta as Record<string, unknown>;
-    expect(meta.sisenseUrl).toBe('https://mock.sisense.com');
-    expect(meta.sisenseToken).toBe('mock-token-abc123');
-    expect(meta.serializedWidgetProps).toBeDefined();
+    expect(result._meta).toBeUndefined();
   });
 
   it('updates session state with chart summaries', async () => {
@@ -131,17 +143,6 @@ describe('buildChart - Tool Mode', () => {
     expect(structured.success).toBe(true);
     expect(typeof structured.imageUrl).toBe('string');
     expect(structured.imageUrl).toContain('screenshots');
-  });
-
-  it('does NOT include _meta in tool mode', async () => {
-    const sessionState = createMockSessionState();
-
-    const result: AnyResult = await buildChart(
-      { dataSourceTitle: 'Sample ECommerce', userPrompt: 'show revenue' },
-      sessionState,
-    );
-
-    expect(result._meta).toBeUndefined();
   });
 
   it('calls renderChartWidget', async () => {
@@ -254,6 +255,7 @@ describe('buildChart - Error handling', () => {
   });
 
   it('returns error when session is missing baseUrl', async () => {
+    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = 'false';
     const sessionState = createMockSessionState();
     sessionState.delete('baseUrl');
 
@@ -337,14 +339,15 @@ describe('buildChart - Session state management', () => {
     expect(capturedContext.toolCallId).toBe('chart-req-123');
   });
 
-  it('works with undefined sessionState', async () => {
+  it('returns isError when sessionState is undefined', async () => {
     const result: AnyResult = await buildChart(
       { dataSourceTitle: 'Sample ECommerce', userPrompt: 'show revenue' },
       undefined,
     );
 
-    // Should still succeed (no saved props, so warns but doesn't crash)
+    expect(result.isError).toBe(true);
     const structured = result.structuredContent as Record<string, unknown>;
-    expect(structured.success).toBe(true);
+    expect(structured.success).toBe(false);
+    expect(String(structured.message)).toContain(MISSING_SISENSE_SESSION_MESSAGE);
   });
 });

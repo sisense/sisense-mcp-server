@@ -4,14 +4,14 @@
 import { App, McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { useApp } from '@modelcontextprotocol/ext-apps/react';
-import { StrictMode, useEffect, useMemo, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import styles from './analytics-app.module.css';
 import { ChartWidget, SisenseContextProvider } from '@sisense/sdk-ui';
 import { ExtendedChartWidgetProps } from '@sisense/sdk-ai-core';
 import { CustomSuperJSON, CustomSuperJSONResult } from '@sisense/sdk-ui/analytics-composer/node';
 
-interface ToolResultMeta {
+interface ChartPayload {
   sisenseUrl: string;
   sisenseToken: string;
   serializedWidgetProps: CustomSuperJSONResult;
@@ -27,63 +27,94 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function isToolResultMeta(value: unknown): value is ToolResultMeta {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const meta = value as Record<string, unknown>;
+function isChartPayload(value: unknown): value is ChartPayload {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
   return (
-    isNonEmptyString(meta.sisenseUrl) &&
-    isNonEmptyString(meta.sisenseToken) &&
-    meta.serializedWidgetProps !== null &&
-    meta.serializedWidgetProps !== undefined
+    isNonEmptyString(v.sisenseUrl) &&
+    isNonEmptyString(v.sisenseToken) &&
+    v.serializedWidgetProps !== null &&
+    v.serializedWidgetProps !== undefined
   );
+}
+
+function extractChartId(toolResult: CallToolResult): string | undefined {
+  const structured = toolResult.structuredContent as Record<string, unknown> | undefined;
+  if (isNonEmptyString(structured?.chartId)) return structured!.chartId as string;
+  const firstContent = Array.isArray(toolResult.content) ? toolResult.content[0] : undefined;
+  const rawText =
+    firstContent && typeof (firstContent as Record<string, unknown>).text === 'string'
+      ? (firstContent as { text: string }).text
+      : undefined;
+  if (rawText) {
+    try {
+      const parsed = JSON.parse(rawText) as Record<string, unknown>;
+      if (isNonEmptyString(parsed.chartId)) return parsed.chartId as string;
+    } catch {
+      // ignore parse errors
+    }
+  }
+  return undefined;
 }
 
 function AnalyticsAppInner({
   hostContext,
   toolResult,
+  app,
 }: {
   hostContext?: McpUiHostContext;
   toolResult?: CallToolResult;
+  app: App;
 }) {
-  const parsed = useMemo((): ParsedToolResult | null => {
-    if (!toolResult) {
-      return null;
+  const [parsed, setParsed] = useState<ParsedToolResult | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toolResult) return;
+
+    setParsed(null);
+    setLoadError(null);
+
+    const chartId = extractChartId(toolResult);
+    if (!chartId) {
+      setLoadError('No chartId in tool result');
+      return;
     }
 
-    const { _meta } = toolResult;
-    if (!_meta || !isToolResultMeta(_meta)) {
-      console.warn('[SisenseAnalytics] Invalid or missing _meta in tool result', {
-        hasMeta: !!_meta,
-        metaType: typeof _meta,
+    app
+      .readServerResource({ uri: `ui://sisense-analytics/chart/${chartId}` })
+      .then((resourceResult) => {
+        const text =
+          Array.isArray(resourceResult.contents) && resourceResult.contents.length > 0
+            ? (resourceResult.contents[0] as { text?: string }).text
+            : undefined;
+        if (!text) throw new Error('Empty resource content');
+        const payload = JSON.parse(text) as unknown;
+        if (!isChartPayload(payload)) throw new Error('Invalid chart resource payload');
+        const widgetProps = CustomSuperJSON.deserialize(
+          payload.serializedWidgetProps,
+        ) as ExtendedChartWidgetProps;
+        if (!widgetProps) throw new Error('Deserialized widget props is null');
+        setParsed({
+          sisenseUrl: payload.sisenseUrl,
+          sisenseToken: payload.sisenseToken,
+          widgetProps,
+        });
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Failed to fetch chart resource';
+        console.error('[SisenseAnalytics] Failed to fetch chart resource', error);
+        setLoadError(message);
       });
-      return null;
-    }
+  }, [toolResult, app]);
 
-    const { sisenseUrl, sisenseToken, serializedWidgetProps } = _meta;
-
-    try {
-      const widgetProps = CustomSuperJSON.deserialize(
-        serializedWidgetProps,
-      ) as ExtendedChartWidgetProps;
-
-      if (!widgetProps) {
-        console.warn('[SisenseAnalytics] Deserialized widget props is null or undefined');
-        return null;
-      }
-
-      return {
-        sisenseUrl,
-        sisenseToken,
-        widgetProps,
-      };
-    } catch (error) {
-      console.error('[SisenseAnalytics] Failed to deserialize widget props', error);
-      return null;
-    }
-  }, [toolResult]);
+  if (loadError) {
+    return (
+      <div className={styles.placeholder}>
+        <p className={styles.error}>ERROR: {loadError}</p>
+      </div>
+    );
+  }
 
   if (!parsed) {
     return (
@@ -164,7 +195,7 @@ function AnalyticsApp() {
     );
   }
 
-  return <AnalyticsAppInner hostContext={hostContext} toolResult={toolResult} />;
+  return <AnalyticsAppInner hostContext={hostContext} toolResult={toolResult} app={app} />;
 }
 
 createRoot(document.getElementById('root')!).render(

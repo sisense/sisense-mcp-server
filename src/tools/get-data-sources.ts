@@ -1,7 +1,7 @@
 import type { GetDataSourcesContext } from '@sisense/sdk-ai-core';
-import type { HttpClient } from '@sisense/sdk-rest-client';
 import { z } from 'zod';
 import type { SessionState } from '../types/sessions.js';
+import { getSessionHttpClient } from '../utils/sisense-session.js';
 
 export const getDataSourcesOutputSchema = {
   dataSources: z.array(z.any()),
@@ -16,11 +16,12 @@ export async function getDataSources(
   isError: boolean;
 }> {
   try {
+    const httpClient = getSessionHttpClient(sessionState);
     const { getDataSourcesEngine } = await import('@sisense/sdk-ai-core');
 
     const getDataSourcesContext: GetDataSourcesContext = {
       toolCallId: 'get-data-sources',
-      httpClient: sessionState?.get('httpClient') as HttpClient | undefined,
+      httpClient,
     };
 
     const result = await getDataSourcesEngine({}, getDataSourcesContext);
