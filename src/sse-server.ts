@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, IncomingMessage } from 'node:http';
 import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -45,6 +45,39 @@ const persistentStates = new Map<string, SessionState>();
 
 function getCredentialKey(sisenseUrl: string, sisenseToken: string): string {
   return createHash('sha256').update(`${sisenseUrl}:${sisenseToken}`).digest('hex').slice(0, 16);
+}
+
+// Returns a fresh clone of existingState ready for a new conversation:
+// clones the shared object (so active sessions using it are unaffected), clears
+// per-conversation LLM context keys, and refreshes baseUrl from the current
+// request headers (so screenshot URLs remain correct if the proxy/ngrok host
+// has changed).
+//
+// Cleared:
+//   chart:summaries  — chart descriptions passed to buildChartEngine
+//   chart-${id}      — raw widget props used by retrieveChart() callback
+//
+// NOT cleared: chart:payload:${id}
+//   These MCP resource payloads are intentionally preserved so the analytics
+//   app can re-render charts when a user revisits an old conversation. They do
+//   contain sisenseUrl/sisenseToken, but those credentials are identical to the
+//   top-level 'sisenseUrl'/'sisenseToken' keys already in state (which are also
+//   not cleared). The state itself is keyed by credential hash, so all entries
+//   belong to the same authenticated user. No additional credential exposure is
+//   introduced by leaving chart:payload entries intact.
+//
+// NOT cleared: credential/client keys (sisenseUrl, sisenseToken, httpClient, openAIClient)
+function resetConversationState(existingState: SessionState, req: IncomingMessage): SessionState {
+  const freshState = new Map(existingState);
+  for (const key of freshState.keys()) {
+    if (key === 'chart:summaries' || (typeof key === 'string' && key.startsWith('chart-'))) {
+      freshState.delete(key);
+    }
+  }
+  const protocol = req.headers['x-forwarded-proto'] || 'http';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  freshState.set('baseUrl', `${protocol}://${host}`);
+  return freshState;
 }
 
 const server = createServer(async (req, res) => {
@@ -174,7 +207,8 @@ const server = createServer(async (req, res) => {
           const existingState = persistentStates.get(credKey);
 
           if (existingState) {
-            state = existingState;
+            state = resetConversationState(existingState, req);
+            persistentStates.set(credKey, state);
           } else {
             try {
               // Validate inputs with security constraints
