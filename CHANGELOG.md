@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0] - 2026-04-13
+
+### Added
+
+- Add tool `buildQuery`, which is toggled by env variable, `TOOL_BUILD_QUERY_ENABLED`. Tool is turned off by default.
+
+### Changed
+
+- **Breaking:** Rename env variable `TOOL_CHART_BUILDER_NARRATIVE_ENABLED` to `TOOL_BUILD_CHART_NARRATIVE_ENABLED`
+- **Breaking:** Rename env variable `TOOL_CHART_BUILDER_MCP_APP_ENABLED` to `MCP_APP_ENABLED`, which toggles MCP APP for all tools that support it (e.g, `buildChart` and soon `buildDashboard`)
+
 ## [0.2.9] - 2026-04-09
 
 ### Changed

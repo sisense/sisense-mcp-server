@@ -216,6 +216,15 @@ export function validateUrl(
 }
 
 /**
+ * Generates a short, unique ID for an artifact (chart, query, dashboard, etc.).
+ * Uses the first segment of a UUID (8 hex chars) to keep IDs readable for LLMs.
+ * Example: generateArtifactId('chart') → 'chart-3f2504e0'
+ */
+export function generateArtifactId(type: string): string {
+  return `${type}-${crypto.randomUUID().split('-')[0]}`;
+}
+
+/**
  * Validates a token string with security constraints.
  * Prevents DoS attacks through length limits and ensures non-empty value.
  *

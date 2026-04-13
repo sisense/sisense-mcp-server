@@ -1,6 +1,6 @@
 {
   "name": "@sisense/mcp-server",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "mcpName": "io.github.sisense/sisense-mcp-server",
   "homepage": "https://github.com/sisense/sisense-mcp-server#readme",
   "description": "MCP server leveraging Sisense Intelligence for actionable insights and analytics.",
@@ -51,7 +51,7 @@
     "@modelcontextprotocol/sdk": "1.29.0",
     "@playwright/experimental-ct-react": "^1.56.1",
     "@playwright/test": "^1.56.1",
-    "@sisense/sdk-ai-core": "0.6.2",
+    "@sisense/sdk-ai-core": "0.6.3",
     "@sisense/sdk-data": "2.24.0",
     "@sisense/sdk-ui": "2.24.0",
     "playwright": "^1.56.1",

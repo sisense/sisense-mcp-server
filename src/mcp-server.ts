@@ -9,6 +9,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildChart, getBuildChartOutputSchema } from './tools/build-chart.js';
+import { buildQuery, buildQueryOutputSchema } from './tools/build-query.js';
 import { getDataSources, getDataSourcesOutputSchema } from './tools/get-data-sources.js';
 import {
   getDataSourceFields,
@@ -16,19 +17,13 @@ import {
 } from './tools/get-data-source-fields.js';
 import { registerPrompts } from './prompts/index.js';
 import type { SessionState } from './types/sessions.js';
+import { getFeatureFlags } from './utils/feature-flags.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isSource = import.meta.url.endsWith('.ts');
 const DIST_DIR = isSource ? path.join(__dirname, '..', 'dist') : __dirname;
 
 const ANALYTICS_RESOURCE_URI = 'ui://sisense-analytics/view.html';
-
-function isMcpAppEnabled(): boolean {
-  return (
-    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED !== 'false' &&
-    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED !== '0'
-  );
-}
 
 function getCspMeta(sessionState?: SessionState): {
   ui: { csp: { connectDomains: string[]; resourceDomains: string[] } };
@@ -57,13 +52,18 @@ const noOpValidator: any = {
 
 export async function setupMcpServer(sessionState?: SessionState): Promise<McpServer> {
   try {
+    const { mcpAppEnabled, toolBuildQueryEnabled } = getFeatureFlags(sessionState);
+
     const {
       TOOL_NAME_CHART_BUILDER,
+      TOOL_NAME_BUILD_QUERY,
       TOOL_NAME_GET_DATA_SOURCE_FIELDS,
       TOOL_NAME_GET_DATA_SOURCES,
       getDataSourcesSchema,
       getDataSourceFieldsSchema,
       buildChartSchema,
+      buildChartSchemaNaturalConversation,
+      buildQuerySchema,
     } = await import('@sisense/sdk-ai-core');
 
     const server = new McpServer(
@@ -103,9 +103,28 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
       },
     );
 
-    const buildChartOutputSchema = getBuildChartOutputSchema();
+    if (toolBuildQueryEnabled) {
+      server.registerTool(
+        TOOL_NAME_BUILD_QUERY,
+        {
+          title: 'Execute Sisense Analytics Query',
+          description:
+            'Converts a natural language question into an analytics query for a Sisense data source, executes it, and returns the resulting dataset and a queryId. Use the queryId when calling buildChart to visualize the results without re-running the query.',
+          inputSchema: buildQuerySchema.shape,
+          outputSchema: buildQueryOutputSchema.shape,
+        },
+        async (args) => {
+          return await buildQuery(args, sessionState);
+        },
+      );
+    }
 
-    if (isMcpAppEnabled()) {
+    const buildChartOutputSchema = getBuildChartOutputSchema(getFeatureFlags(sessionState));
+    const chartInputSchema = toolBuildQueryEnabled
+      ? buildChartSchemaNaturalConversation
+      : buildChartSchema;
+
+    if (mcpAppEnabled) {
       registerAppTool(
         server,
         TOOL_NAME_CHART_BUILDER,
@@ -113,12 +132,12 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
           title: 'Build Sisense Chart from User Prompt',
           description:
             'Build a chart from a Sisense data source using natural language user prompt. Chart type will be automatically determined by Sisense AI based on the user prompt.',
-          inputSchema: buildChartSchema.shape,
+          inputSchema: chartInputSchema.shape,
           outputSchema: buildChartOutputSchema.shape,
           _meta: { ui: { resourceUri: ANALYTICS_RESOURCE_URI } },
         },
-        async (args, extra) => {
-          return await buildChart(args, sessionState, extra.requestId);
+        async (args) => {
+          return await buildChart(args, sessionState);
         },
       );
     } else {
@@ -128,7 +147,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
           title: 'Build Sisense Chart from User Prompt',
           description:
             'Build a chart from a Sisense data source using natural language user prompt. Chart type will be automatically determined by Sisense AI based on the user prompt.',
-          inputSchema: buildChartSchema.shape,
+          inputSchema: chartInputSchema.shape,
           outputSchema: buildChartOutputSchema.shape,
         },
         async (args) => {

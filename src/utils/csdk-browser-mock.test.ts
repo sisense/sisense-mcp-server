@@ -1,11 +1,43 @@
 import { describe, it, expect } from 'bun:test';
 import { csdkBrowserMock } from './csdk-browser-mock.js';
 
+interface CsdkMockElement {
+  tagName: string;
+  style: unknown;
+  classList: unknown;
+}
+
+interface CsdkMockWindow {
+  document: {
+    createElement: (tag: string) => CsdkMockElement;
+  };
+  navigator: { userAgent: string };
+  location: unknown;
+  innerWidth: number;
+  innerHeight: number;
+  App: {
+    user: {
+      tenant: unknown;
+    };
+  };
+  fetch?: typeof fetch;
+  Request?: unknown;
+  Response?: unknown;
+  Headers?: unknown;
+}
+
+type GlobalWithCsdkMock = typeof globalThis & {
+  window?: CsdkMockWindow;
+  document?: { createElement: (tag: string) => CsdkMockElement };
+  navigator?: { userAgent: string };
+};
+
 describe('CsdkBrowserMock', () => {
   it('withBrowserEnvironment provides browser context during callback', async () => {
     let windowExisted = false;
     await csdkBrowserMock.withBrowserEnvironment(() => {
-      windowExisted = typeof (globalThis as any).window === 'object';
+      const g = globalThis as GlobalWithCsdkMock;
+      windowExisted = typeof g.window === 'object';
     });
 
     expect(windowExisted).toBe(true);
@@ -13,7 +45,8 @@ describe('CsdkBrowserMock', () => {
 
   it('withBrowserEnvironment provides window with expected properties', async () => {
     await csdkBrowserMock.withBrowserEnvironment(() => {
-      const win = (globalThis as any).window;
+      const g = globalThis as GlobalWithCsdkMock;
+      const win = g.window!;
       expect(win.document).toBeDefined();
       expect(win.navigator).toBeDefined();
       expect(win.location).toBeDefined();
@@ -24,7 +57,8 @@ describe('CsdkBrowserMock', () => {
 
   it('withBrowserEnvironment provides document with createElement', async () => {
     await csdkBrowserMock.withBrowserEnvironment(() => {
-      const doc = (globalThis as any).document;
+      const g = globalThis as GlobalWithCsdkMock;
+      const doc = g.document!;
       const el = doc.createElement('div');
       expect(el.tagName).toBe('DIV');
       expect(el.style).toBeDefined();
@@ -34,14 +68,16 @@ describe('CsdkBrowserMock', () => {
 
   it('withBrowserEnvironment provides navigator with userAgent', async () => {
     await csdkBrowserMock.withBrowserEnvironment(() => {
-      const nav = (globalThis as any).navigator;
+      const g = globalThis as GlobalWithCsdkMock;
+      const nav = g.navigator!;
       expect(nav.userAgent).toContain('Node.js');
     });
   });
 
   it('withBrowserEnvironment provides window.App for CSDK', async () => {
     await csdkBrowserMock.withBrowserEnvironment(() => {
-      const win = (globalThis as any).window;
+      const g = globalThis as GlobalWithCsdkMock;
+      const win = g.window!;
       expect(win.App).toBeDefined();
       expect(win.App.user).toBeDefined();
       expect(win.App.user.tenant).toBeDefined();
@@ -66,7 +102,8 @@ describe('CsdkBrowserMock', () => {
 
   it('withBrowserEnvironment preserves fetch API', async () => {
     await csdkBrowserMock.withBrowserEnvironment(() => {
-      const win = (globalThis as any).window;
+      const g = globalThis as GlobalWithCsdkMock;
+      const win = g.window!;
       expect(win.fetch).toBeDefined();
       expect(win.Request).toBeDefined();
       expect(win.Response).toBeDefined();
@@ -76,10 +113,11 @@ describe('CsdkBrowserMock', () => {
 
   it('createPersistent and cleanupPersistent work as pair', () => {
     csdkBrowserMock.createPersistent();
-    expect(typeof (globalThis as any).window).toBe('object');
+    const g = globalThis as GlobalWithCsdkMock;
+    expect(typeof g.window).toBe('object');
 
     csdkBrowserMock.cleanupPersistent();
-    expect((globalThis as any).window).toBeUndefined();
+    expect(g.window).toBeUndefined();
 
     // Re-create for other tests
     csdkBrowserMock.createPersistent();

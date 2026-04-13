@@ -9,7 +9,9 @@ export {};
 const { mock } = await import('bun:test');
 const { z } = await import('zod');
 const { csdkBrowserMock } = await import('@/utils/csdk-browser-mock.js');
-const { MOCK_CHART_SUMMARY, MOCK_CHART_WIDGET_PROPS } = await import('./mock-engines.js');
+const { generateArtifactId } = await import('@/utils/string-utils.js');
+const { MOCK_CHART_SUMMARY, MOCK_CHART_WIDGET_PROPS, MOCK_NLQ_RESULT, MOCK_QUERY_SUMMARY } =
+  await import('./mock-engines.js');
 
 // Set up persistent browser mock so CSDK imports don't fail on `window` checks
 csdkBrowserMock.createPersistent();
@@ -22,10 +24,42 @@ mock.module('@sisense/sdk-ai-core', () => ({
   TOOL_NAME_CHART_BUILDER: 'sisense-build-chart',
   TOOL_NAME_GET_DATA_SOURCES: 'sisense-get-data-sources',
   TOOL_NAME_GET_DATA_SOURCE_FIELDS: 'sisense-get-data-source-fields',
+  TOOL_NAME_BUILD_QUERY: 'sisense-build-query',
 
   getDataSourcesSchema: z.object({}),
   getDataSourceFieldsSchema: z.object({ dataSourceTitle: z.string() }),
   buildChartSchema: z.object({ dataSourceTitle: z.string(), userPrompt: z.string() }),
+  buildChartSchemaNaturalConversation: z.object({
+    dataSourceTitle: z.string(),
+    userPrompt: z.string(),
+    queryId: z.string().nullable().optional(),
+  }),
+  buildQuerySchema: z.object({ dataSourceTitle: z.string(), queryPrompt: z.string() }),
+
+  buildQueryEngine: mock(
+    async (
+      _args: { dataSourceTitle: string; queryPrompt: string },
+      context?: { toolCallId?: string },
+    ) => {
+      const queryId = context?.toolCallId ?? generateArtifactId('query');
+      return {
+        queryId,
+        title: MOCK_NLQ_RESULT.chartState.title,
+        nlqResult: MOCK_NLQ_RESULT,
+      };
+    },
+  ),
+
+  toQuerySummary: (
+    result: { queryId: string; title: string; nlqResult: typeof MOCK_NLQ_RESULT },
+    includeDataset = true,
+  ) => ({
+    ...MOCK_QUERY_SUMMARY,
+    queryId: result.queryId,
+    dataset: includeDataset
+      ? result.nlqResult.dataset
+      : 'Query executed successfully. Call buildChart with this queryId to visualize the results.',
+  }),
 
   buildChartEngine: mock(
     async (

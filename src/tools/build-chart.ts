@@ -2,8 +2,8 @@ import type {
   BuildChartContext,
   ChartSummary,
   ExtendedChartWidgetProps,
+  QueryResult,
 } from '@sisense/sdk-ai-core';
-import type { RequestId } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { csdkBrowserMock } from '@/utils/csdk-browser-mock';
 import type { SessionState } from '../types/sessions.js';
@@ -14,22 +14,9 @@ import {
   getSessionSisenseToken,
   getSessionSisenseUrl,
 } from '../utils/sisense-session.js';
-import { sanitizeError } from '../utils/string-utils.js';
+import { sanitizeError, generateArtifactId } from '../utils/string-utils.js';
+import { getFeatureFlags, type SessionFeatureFlags } from '../utils/feature-flags.js';
 import { CustomSuperJSON } from '@sisense/sdk-ui/analytics-composer/node';
-
-function isMcpAppEnabled(): boolean {
-  return (
-    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED !== 'false' &&
-    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED !== '0'
-  );
-}
-
-function isNarrativeEnabled(): boolean {
-  return (
-    process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED !== 'false' &&
-    process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED !== '0'
-  );
-}
 
 const baseOutputSchema = z.object({
   success: z.boolean(),
@@ -44,8 +31,8 @@ export const buildChartOutputSchemaToolMode = baseOutputSchema.extend({
   imageUrl: z.string().optional(),
 });
 
-export function getBuildChartOutputSchema() {
-  return isMcpAppEnabled() ? buildChartOutputSchemaAppMode : buildChartOutputSchemaToolMode;
+export function getBuildChartOutputSchema(flags: SessionFeatureFlags) {
+  return flags.mcpAppEnabled ? buildChartOutputSchemaAppMode : buildChartOutputSchemaToolMode;
 }
 
 function getChartSummaries(sessionState?: SessionState): ChartSummary[] {
@@ -59,17 +46,18 @@ function addChartSummary(sessionState: SessionState | undefined, summary: ChartS
 }
 
 export async function buildChart(
-  args: { dataSourceTitle: string; userPrompt: string },
+  args: { dataSourceTitle: string; userPrompt: string; queryId?: string | null },
   sessionState?: SessionState,
-  requestId?: RequestId,
 ) {
+  const { mcpAppEnabled, toolBuildChartNarrativeEnabled } = getFeatureFlags(sessionState);
+
   try {
-    const { dataSourceTitle, userPrompt } = args;
+    const { dataSourceTitle, userPrompt, queryId } = args;
 
     const httpClient = getSessionHttpClient(sessionState);
     const openAIClient = getSessionOpenAIClient(sessionState);
 
-    const toolCallId = String(requestId ? `chart-${requestId}` : `chart-${Date.now()}`);
+    const toolCallId = generateArtifactId('chart');
 
     const result = await csdkBrowserMock.withBrowserEnvironment(async () => {
       const { buildChartEngine, runWithUserAction } = await import('@sisense/sdk-ai-core');
@@ -81,14 +69,20 @@ export async function buildChart(
         chartSummaries: getChartSummaries(sessionState),
         retrieveChart: (id) => (sessionState?.get(id) as ExtendedChartWidgetProps) ?? null,
         saveChart: (id, props) => sessionState?.set(id, props),
+        retrieveQuery: (id) => (sessionState?.get(`query-${id}`) as QueryResult) ?? null,
+        onInternalQueryResult: (result) => sessionState?.set(`query-${result.queryId}`, result),
         isNlqV3Enabled: true,
         httpClient,
         openAIClient,
+        ...(queryId != null && { queryId }),
       };
 
       // run with user action to collect telemetry and handle consumption quota
       const chartSummary = await runWithUserAction('MCP', 'ASSISTANT', () =>
-        buildChartEngine({ dataSourceTitle, userPrompt }, buildChartContext),
+        buildChartEngine(
+          { dataSourceTitle, userPrompt, queryId: queryId ?? undefined },
+          buildChartContext,
+        ),
       );
 
       console.info('>>> CHART SUMMARY', chartSummary);
@@ -104,14 +98,13 @@ export async function buildChart(
         const sisenseToken = getSessionSisenseToken(sessionState);
 
         // Run insights API only when narrative enabled; optionally run image render (skip when MCP App mode)
-        const narrativeEnabled = isNarrativeEnabled();
         const { getNlgInsightsFromWidget } = await import('@sisense/sdk-ui/ai');
         const insightsPromise =
-          narrativeEnabled && httpClient
+          toolBuildChartNarrativeEnabled && httpClient
             ? getNlgInsightsFromWidget(savedProps, httpClient, { verbosity: 'High' })
             : Promise.resolve(undefined as string | undefined);
 
-        const renderPromise = isMcpAppEnabled()
+        const renderPromise = mcpAppEnabled
           ? Promise.resolve(null)
           : renderChartWidget({
               widgetProps: savedProps,
@@ -136,16 +129,16 @@ export async function buildChart(
 
         // Extract imageUrl when render was run (tool mode only)
         let imageUrl: string | undefined;
-        if (!isMcpAppEnabled() && renderResult.status === 'fulfilled' && renderResult.value) {
+        if (!mcpAppEnabled && renderResult.status === 'fulfilled' && renderResult.value) {
           imageUrl = renderResult.value.content[0]?.text;
-        } else if (!isMcpAppEnabled() && renderResult.status === 'rejected') {
+        } else if (!mcpAppEnabled && renderResult.status === 'rejected') {
           const sanitized = sanitizeError(renderResult.reason);
           console.warn('Failed to render chart widget:', sanitized.message);
         }
 
         const serializedWidgetProps = CustomSuperJSON.serialize(savedProps);
 
-        if (isMcpAppEnabled() && sisenseUrl && sisenseToken) {
+        if (mcpAppEnabled && sisenseUrl && sisenseToken) {
           sessionState?.set(`chart:payload:${chartSummary.chartId}`, {
             sisenseUrl,
             sisenseToken,
@@ -179,8 +172,8 @@ export async function buildChart(
       success: true,
       chartId: chartSummary.chartId,
       message: chartSummary.message || `Chart created successfully for query: "${userPrompt}"`,
-      ...(isNarrativeEnabled() && insights != null ? { insights } : {}),
-      ...(isMcpAppEnabled() ? {} : { imageUrl }),
+      ...(toolBuildChartNarrativeEnabled && insights != null ? { insights } : {}),
+      ...(mcpAppEnabled ? {} : { imageUrl }),
     };
 
     const finalOutput = {
@@ -201,8 +194,8 @@ export async function buildChart(
       success: false,
       chartId: undefined,
       message: `Failed to create chart: ${errorMessage}`,
-      ...(isNarrativeEnabled() ? { insights: undefined } : {}),
-      ...(isMcpAppEnabled() ? {} : { imageUrl: undefined }),
+      ...(toolBuildChartNarrativeEnabled ? { insights: undefined } : {}),
+      ...(mcpAppEnabled ? {} : { imageUrl: undefined }),
     };
 
     return {

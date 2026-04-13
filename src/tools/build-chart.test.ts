@@ -21,8 +21,8 @@ afterEach(() => {
 describe('buildChart - MCP App Mode (default)', () => {
   beforeEach(() => {
     // App mode is default (env var not set or not 'false')
-    delete process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
-    delete process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+    delete process.env.MCP_APP_ENABLED;
+    delete process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
   });
 
   it('returns success with chartId and message', async () => {
@@ -127,8 +127,8 @@ describe('buildChart - MCP App Mode (default)', () => {
 
 describe('buildChart - Tool Mode', () => {
   beforeEach(() => {
-    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = 'false';
-    delete process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+    process.env.MCP_APP_ENABLED = 'false';
+    delete process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
   });
 
   it('returns imageUrl in structuredContent', async () => {
@@ -161,11 +161,11 @@ describe('buildChart - Tool Mode', () => {
 
 describe('buildChart - Narrative behavior', () => {
   beforeEach(() => {
-    delete process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
+    delete process.env.MCP_APP_ENABLED;
   });
 
   it('includes insights when narrative is enabled (default)', async () => {
-    delete process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+    delete process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
     const sessionState = createMockSessionState();
 
     const result: AnyResult = await buildChart(
@@ -179,8 +179,8 @@ describe('buildChart - Narrative behavior', () => {
     expect((structured.insights as string).length).toBeGreaterThan(0);
   });
 
-  it('does NOT include insights when TOOL_CHART_BUILDER_NARRATIVE_ENABLED=false', async () => {
-    process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED = 'false';
+  it('does NOT include insights when TOOL_BUILD_CHART_NARRATIVE_ENABLED=false', async () => {
+    process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED = 'false';
     const sessionState = createMockSessionState();
 
     const result: AnyResult = await buildChart(
@@ -193,7 +193,7 @@ describe('buildChart - Narrative behavior', () => {
   });
 
   it('succeeds even when getNlgInsightsFromWidget rejects', async () => {
-    delete process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+    delete process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
     const { getNlgInsightsFromWidget } = await import('@sisense/sdk-ui/ai');
 
     (getNlgInsightsFromWidget as ReturnType<typeof mock>).mockImplementationOnce(async () => {
@@ -215,8 +215,8 @@ describe('buildChart - Narrative behavior', () => {
 
 describe('buildChart - Error handling', () => {
   beforeEach(() => {
-    delete process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
-    delete process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+    delete process.env.MCP_APP_ENABLED;
+    delete process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
   });
 
   it('returns isError true when buildChartEngine throws', async () => {
@@ -255,7 +255,7 @@ describe('buildChart - Error handling', () => {
   });
 
   it('returns error when session is missing baseUrl', async () => {
-    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = 'false';
+    process.env.MCP_APP_ENABLED = 'false';
     const sessionState = createMockSessionState();
     sessionState.delete('baseUrl');
 
@@ -271,8 +271,8 @@ describe('buildChart - Error handling', () => {
   });
 
   it('succeeds when renderChartWidget rejects in tool mode', async () => {
-    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = 'false';
-    process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED = 'false';
+    process.env.MCP_APP_ENABLED = 'false';
+    process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED = 'false';
     const { renderChartWidget } = await import('@/utils/widget-renderer/widget-renderer.js');
 
     (renderChartWidget as ReturnType<typeof mock>).mockImplementationOnce(async () => {
@@ -294,8 +294,8 @@ describe('buildChart - Error handling', () => {
 
 describe('buildChart - Session state management', () => {
   beforeEach(() => {
-    delete process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
-    process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED = 'false';
+    delete process.env.MCP_APP_ENABLED;
+    process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED = 'false';
   });
 
   it('multiple calls accumulate in chart:summaries', async () => {
@@ -314,16 +314,16 @@ describe('buildChart - Session state management', () => {
     expect(summaries).toHaveLength(2);
   });
 
-  it('toolCallId uses requestId when provided', async () => {
+  it('toolCallId is a short unique chart ID', async () => {
     const { buildChartEngine } = await import('@sisense/sdk-ai-core');
-    let capturedContext: { toolCallId?: string } = {};
+    const capturedIds: string[] = [];
 
-    (buildChartEngine as ReturnType<typeof mock>).mockImplementationOnce(
+    (buildChartEngine as ReturnType<typeof mock>).mockImplementation(
       async (
         args: unknown,
         context: { toolCallId?: string; saveChart?: (id: string, props: unknown) => void },
       ) => {
-        capturedContext = context;
+        capturedIds.push(context.toolCallId ?? '');
         context.saveChart?.('chart-test', { chartType: 'bar', dataSource: 'test' });
         return { chartId: 'chart-test', message: 'Test chart' };
       },
@@ -333,10 +333,15 @@ describe('buildChart - Session state management', () => {
     await buildChart(
       { dataSourceTitle: 'Sample ECommerce', userPrompt: 'show revenue' },
       sessionState,
-      'req-123',
+    );
+    await buildChart(
+      { dataSourceTitle: 'Sample ECommerce', userPrompt: 'show orders' },
+      sessionState,
     );
 
-    expect(capturedContext.toolCallId).toBe('chart-req-123');
+    expect(capturedIds[0]).toMatch(/^chart-[0-9a-f]{8}$/);
+    expect(capturedIds[1]).toMatch(/^chart-[0-9a-f]{8}$/);
+    expect(capturedIds[0]).not.toBe(capturedIds[1]);
   });
 
   it('returns isError when sessionState is undefined', async () => {

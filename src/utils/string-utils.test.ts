@@ -6,6 +6,7 @@ import {
   sanitizeError,
   validateUrl,
   validateToken,
+  generateArtifactId,
 } from './string-utils.js';
 
 describe('toKebabCase', () => {
@@ -183,5 +184,16 @@ describe('validateToken', () => {
 
   it('enforces custom maxLength', () => {
     expect(() => validateToken('abcdef', { maxLength: 3 })).toThrow('exceeds maximum length');
+  });
+});
+
+describe('generateArtifactId', () => {
+  it('returns id with the given type prefix and 8 hex chars', () => {
+    expect(generateArtifactId('chart')).toMatch(/^chart-[0-9a-f]{8}$/);
+    expect(generateArtifactId('query')).toMatch(/^query-[0-9a-f]{8}$/);
+  });
+
+  it('returns unique ids on successive calls', () => {
+    expect(generateArtifactId('chart')).not.toBe(generateArtifactId('chart'));
   });
 });

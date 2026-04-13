@@ -16,8 +16,8 @@ describe('Analytics App Render E2E', () => {
 
   beforeAll(async () => {
     // Force MCP App mode so buildChart stores chart payload in session state
-    savedEnv.TOOL_CHART_BUILDER_MCP_APP_ENABLED = process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
-    process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = 'true';
+    savedEnv.MCP_APP_ENABLED = process.env.MCP_APP_ENABLED;
+    process.env.MCP_APP_ENABLED = 'true';
     await setupE2ETests();
   });
 
@@ -133,10 +133,10 @@ describe('Analytics App Render E2E', () => {
   );
 
   afterAll(() => {
-    if (savedEnv.TOOL_CHART_BUILDER_MCP_APP_ENABLED !== undefined) {
-      process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = savedEnv.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
+    if (savedEnv.MCP_APP_ENABLED !== undefined) {
+      process.env.MCP_APP_ENABLED = savedEnv.MCP_APP_ENABLED;
     } else {
-      delete process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
+      delete process.env.MCP_APP_ENABLED;
     }
   });
 });

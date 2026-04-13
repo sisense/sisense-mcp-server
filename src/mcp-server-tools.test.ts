@@ -54,8 +54,8 @@ describe('MCP Server - Tool Calls via Client', () => {
 
   describe('buildChart - App Mode', () => {
     beforeEach(() => {
-      delete process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
-      delete process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+      delete process.env.MCP_APP_ENABLED;
+      delete process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
     });
 
     it('returns success via MCP client', async () => {
@@ -127,8 +127,8 @@ describe('MCP Server - Tool Calls via Client', () => {
 
   describe('buildChart - Tool Mode', () => {
     beforeEach(() => {
-      process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = 'false';
-      process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED = 'false';
+      process.env.MCP_APP_ENABLED = 'false';
+      process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED = 'false';
     });
 
     it('returns imageUrl in tool mode', async () => {
@@ -156,7 +156,7 @@ describe('MCP Server - Tool Calls via Client', () => {
         throw new Error('Service timeout');
       });
 
-      delete process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
+      delete process.env.MCP_APP_ENABLED;
       const { client } = await createMockMcpFixture();
 
       const result = await client.callTool({

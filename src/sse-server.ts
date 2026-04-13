@@ -11,6 +11,7 @@ import { initializeSisenseClients } from './initialize-sisense-clients.js';
 import type { SessionState } from './types/sessions.js';
 import { setupMcpServer } from './mcp-server.js';
 import { sanitizeError, validateUrl, validateToken } from './utils/string-utils.js';
+import { applyFeatureFlagsToSession } from './utils/feature-flags.js';
 
 const PACKAGE_VERSION = (
   JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as {
@@ -70,7 +71,10 @@ function getCredentialKey(sisenseUrl: string, sisenseToken: string): string {
 function resetConversationState(existingState: SessionState, req: IncomingMessage): SessionState {
   const freshState = new Map(existingState);
   for (const key of freshState.keys()) {
-    if (key === 'chart:summaries' || (typeof key === 'string' && key.startsWith('chart-'))) {
+    if (
+      key === 'chart:summaries' ||
+      (typeof key === 'string' && (key.startsWith('chart-') || key.startsWith('query-')))
+    ) {
       freshState.delete(key);
     }
   }
@@ -295,6 +299,7 @@ const server = createServer(async (req, res) => {
           }
         };
 
+        applyFeatureFlagsToSession(url, state);
         const mcpServer = await setupMcpServer(state);
         await mcpServer.connect(transport);
       } else {
@@ -364,6 +369,11 @@ initializeSisenseClients()
       console.log(
         '  Or set SISENSE_URL and SISENSE_TOKEN in the environment and use http://localhost:' +
           `${PORT}/mcp`,
+      );
+      console.log('');
+      console.log('Optional feature-flag query params (override env vars per connection):');
+      console.log(
+        '  mcpAppEnabled=true|false, toolBuildQueryEnabled=true|false, toolBuildChartNarrativeEnabled=true|false',
       );
       console.log('');
       console.log('Endpoints:');

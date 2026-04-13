@@ -2,7 +2,7 @@ import type { SessionState } from '@/types/sessions.js';
 import { csdkBrowserMock } from '@/utils/csdk-browser-mock.js';
 
 const WINDOW_UNDEFINED_HINT =
-  'Ensure E2E test setup runs first (import e2e/helpers/test-setup.js before other imports) so the browser mock is active. TOOL_CHART_BUILDER_MCP_APP_ENABLED is unrelated to this error.';
+  'Ensure E2E test setup runs first (import e2e/helpers/test-setup.js before other imports) so the browser mock is active. MCP_APP_ENABLED is unrelated to this error.';
 
 /**
  * Creates a test session state with httpClient and openAIClient configured.

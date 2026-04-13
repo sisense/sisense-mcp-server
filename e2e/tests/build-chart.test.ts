@@ -88,10 +88,10 @@ describe('Build Chart Tool E2E', () => {
   );
 
   it(
-    'when TOOL_CHART_BUILDER_NARRATIVE_ENABLED is false, buildChart succeeds and does not include insights',
+    'when TOOL_BUILD_CHART_NARRATIVE_ENABLED is false, buildChart succeeds and does not include insights',
     async () => {
-      const prev = process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
-      process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED = 'false';
+      const prev = process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
+      process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED = 'false';
       try {
         const { TOOL_NAME_CHART_BUILDER } = await import('@sisense/sdk-ai-core');
         const { client } = await createMcpTestFixture();
@@ -115,9 +115,9 @@ describe('Build Chart Tool E2E', () => {
         expect(structured).not.toHaveProperty('insights');
       } finally {
         if (prev !== undefined) {
-          process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED = prev;
+          process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED = prev;
         } else {
-          delete process.env.TOOL_CHART_BUILDER_NARRATIVE_ENABLED;
+          delete process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
         }
       }
     },
@@ -127,8 +127,8 @@ describe('Build Chart Tool E2E', () => {
   it(
     'should generate a chart image (tool mode: Playwright CT PNG on disk and imageUrl in result)',
     async () => {
-      const prevApp = process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
-      process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = 'false';
+      const prevApp = process.env.MCP_APP_ENABLED;
+      process.env.MCP_APP_ENABLED = 'false';
       try {
         const { TOOL_NAME_CHART_BUILDER } = await import('@sisense/sdk-ai-core');
         const { client } = await createMcpTestFixture();
@@ -170,9 +170,9 @@ describe('Build Chart Tool E2E', () => {
         expect(bytes.subarray(0, 8).equals(PNG_MAGIC)).toBe(true);
       } finally {
         if (prevApp !== undefined) {
-          process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED = prevApp;
+          process.env.MCP_APP_ENABLED = prevApp;
         } else {
-          delete process.env.TOOL_CHART_BUILDER_MCP_APP_ENABLED;
+          delete process.env.MCP_APP_ENABLED;
         }
       }
     },
