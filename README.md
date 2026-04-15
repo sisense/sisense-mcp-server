@@ -84,11 +84,11 @@ The server automatically derives its public base URL from request headers, so it
 
 These query params override the corresponding env vars on a per-connection basis. Accepted values: `true`, `false`, `1`, `0` (case-insensitive).
 
-| Query parameter                    | Env var equivalent                      | Default | Description                                                                  |
-| ---------------------------------- | --------------------------------------- | ------- | ---------------------------------------------------------------------------- |
-| `mcpAppEnabled`                    | `MCP_APP_ENABLED`                       | `true`  | MCP App mode: interactive chart in app. Set to `false` for tool mode (image) |
-| `toolBuildQueryEnabled`            | `TOOL_BUILD_QUERY_ENABLED`              | `false` | Enable the `buildQuery` tool for executing analytics queries                 |
-| `toolBuildChartNarrativeEnabled`   | `TOOL_BUILD_CHART_NARRATIVE_ENABLED`    | `true`  | Include NLG narrative/insights in the chart builder response                 |
+| Query parameter                  | Env var equivalent                   | Default | Description                                                                  |
+| -------------------------------- | ------------------------------------ | ------- | ---------------------------------------------------------------------------- |
+| `mcpAppEnabled`                  | `MCP_APP_ENABLED`                    | `true`  | MCP App mode: interactive chart in app. Set to `false` for tool mode (image) |
+| `toolBuildQueryEnabled`          | `TOOL_BUILD_QUERY_ENABLED`           | `false` | Enable the `buildQuery` tool for executing analytics queries                 |
+| `toolBuildChartNarrativeEnabled` | `TOOL_BUILD_CHART_NARRATIVE_ENABLED` | `true`  | Include NLG narrative/insights in the build chart tool response              |
 
 Example URL with all three overrides:
 

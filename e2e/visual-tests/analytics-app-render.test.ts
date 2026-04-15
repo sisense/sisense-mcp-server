@@ -25,11 +25,11 @@ describe('Analytics App Render E2E', () => {
     'should render an interactive chart via the MCP App protocol',
     async () => {
       // 1. Call buildChart via MCP to get chartId from structuredContent
-      const { TOOL_NAME_CHART_BUILDER } = await import('@sisense/sdk-ai-core');
+      const { TOOL_NAME_BUILD_CHART } = await import('@sisense/sdk-ai-core');
       const { client } = await createMcpTestFixture();
 
       const result = await client.callTool({
-        name: TOOL_NAME_CHART_BUILDER,
+        name: TOOL_NAME_BUILD_CHART,
         arguments: {
           dataSourceTitle: 'Sample ECommerce',
           userPrompt: 'show me total revenue by month with trend and forecast',

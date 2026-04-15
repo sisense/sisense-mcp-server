@@ -24,12 +24,12 @@ describe('Build Chart Tool E2E', () => {
     'should call build-chart tool via MCP client',
     async () => {
       // Dynamically import tool name after browser mock is initialized
-      const { TOOL_NAME_CHART_BUILDER } = await import('@sisense/sdk-ai-core');
+      const { TOOL_NAME_BUILD_CHART } = await import('@sisense/sdk-ai-core');
       const { client, sessionState } = await createMcpTestFixture();
 
       // Call build-chart tool via client.callTool()
       const result = await client.callTool({
-        name: TOOL_NAME_CHART_BUILDER,
+        name: TOOL_NAME_BUILD_CHART,
         arguments: {
           dataSourceTitle: 'Sample ECommerce',
           userPrompt: 'show me total revenue by month with trend',
@@ -93,11 +93,11 @@ describe('Build Chart Tool E2E', () => {
       const prev = process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED;
       process.env.TOOL_BUILD_CHART_NARRATIVE_ENABLED = 'false';
       try {
-        const { TOOL_NAME_CHART_BUILDER } = await import('@sisense/sdk-ai-core');
+        const { TOOL_NAME_BUILD_CHART } = await import('@sisense/sdk-ai-core');
         const { client } = await createMcpTestFixture();
 
         const result = await client.callTool({
-          name: TOOL_NAME_CHART_BUILDER,
+          name: TOOL_NAME_BUILD_CHART,
           arguments: {
             dataSourceTitle: 'Sample ECommerce',
             userPrompt: 'show me total revenue by month with trend',
@@ -130,11 +130,11 @@ describe('Build Chart Tool E2E', () => {
       const prevApp = process.env.MCP_APP_ENABLED;
       process.env.MCP_APP_ENABLED = 'false';
       try {
-        const { TOOL_NAME_CHART_BUILDER } = await import('@sisense/sdk-ai-core');
+        const { TOOL_NAME_BUILD_CHART } = await import('@sisense/sdk-ai-core');
         const { client } = await createMcpTestFixture();
 
         const result = await client.callTool({
-          name: TOOL_NAME_CHART_BUILDER,
+          name: TOOL_NAME_BUILD_CHART,
           arguments: {
             dataSourceTitle: 'Sample ECommerce',
             userPrompt: 'show me total revenue by month with trend',

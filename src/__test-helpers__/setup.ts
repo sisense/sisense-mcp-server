@@ -21,7 +21,7 @@ mock.module('@sisense/sdk-ai-core', () => ({
   runWithUserAction: <T>(_interfaceName: string, _featureName: string, fn: () => Promise<T>) =>
     fn(),
 
-  TOOL_NAME_CHART_BUILDER: 'sisense-build-chart',
+  TOOL_NAME_BUILD_CHART: 'sisense-build-chart',
   TOOL_NAME_GET_DATA_SOURCES: 'sisense-get-data-sources',
   TOOL_NAME_GET_DATA_SOURCE_FIELDS: 'sisense-get-data-source-fields',
   TOOL_NAME_BUILD_QUERY: 'sisense-build-query',

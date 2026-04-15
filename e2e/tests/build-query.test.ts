@@ -85,8 +85,7 @@ describe('Build Query Tool E2E', () => {
   it(
     'should call buildQuery then buildChart with queryId (no redundant NLQ call)',
     async () => {
-      const { TOOL_NAME_BUILD_QUERY, TOOL_NAME_CHART_BUILDER } =
-        await import('@sisense/sdk-ai-core');
+      const { TOOL_NAME_BUILD_QUERY, TOOL_NAME_BUILD_CHART } = await import('@sisense/sdk-ai-core');
       const { client } = await createMcpTestFixture();
 
       // Step 1: Run query
@@ -105,7 +104,7 @@ describe('Build Query Tool E2E', () => {
 
       // Step 2: Build chart using the queryId from step 1
       const chartResult = await client.callTool({
-        name: TOOL_NAME_CHART_BUILDER,
+        name: TOOL_NAME_BUILD_CHART,
         arguments: {
           dataSourceTitle: 'Sample ECommerce',
           userPrompt: 'Show total revenue by month as a bar chart',

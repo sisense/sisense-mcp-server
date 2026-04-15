@@ -55,7 +55,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
     const { mcpAppEnabled, toolBuildQueryEnabled } = getFeatureFlags(sessionState);
 
     const {
-      TOOL_NAME_CHART_BUILDER,
+      TOOL_NAME_BUILD_CHART,
       TOOL_NAME_BUILD_QUERY,
       TOOL_NAME_GET_DATA_SOURCE_FIELDS,
       TOOL_NAME_GET_DATA_SOURCES,
@@ -127,7 +127,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
     if (mcpAppEnabled) {
       registerAppTool(
         server,
-        TOOL_NAME_CHART_BUILDER,
+        TOOL_NAME_BUILD_CHART,
         {
           title: 'Build Sisense Chart from User Prompt',
           description:
@@ -142,7 +142,7 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
       );
     } else {
       server.registerTool(
-        TOOL_NAME_CHART_BUILDER,
+        TOOL_NAME_BUILD_CHART,
         {
           title: 'Build Sisense Chart from User Prompt',
           description:

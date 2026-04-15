@@ -7,6 +7,7 @@ import { useApp } from '@modelcontextprotocol/ext-apps/react';
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import styles from './analytics-app.module.css';
+import { deriveToolFailureMessage } from './tool-result-message.js';
 import { ChartWidget, SisenseContextProvider } from '@sisense/sdk-ui';
 import { ExtendedChartWidgetProps } from '@sisense/sdk-ai-core';
 import { CustomSuperJSON, CustomSuperJSONResult } from '@sisense/sdk-ui/analytics-composer/node';
@@ -77,7 +78,11 @@ function AnalyticsAppInner({
 
     const chartId = extractChartId(toolResult);
     if (!chartId) {
-      setLoadError('No chartId in tool result');
+      setLoadError(
+        deriveToolFailureMessage(toolResult, {
+          fallback: 'The chart tool did not return a chart id.',
+        }),
+      );
       return;
     }
 
@@ -111,7 +116,7 @@ function AnalyticsAppInner({
   if (loadError) {
     return (
       <div className={styles.placeholder}>
-        <p className={styles.error}>ERROR: {loadError}</p>
+        <p className={`${styles.error} ${styles.errorDetails}`}>ERROR: {loadError}</p>
       </div>
     );
   }
