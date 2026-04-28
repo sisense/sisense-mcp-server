@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0] - 2026-04-27
+
+### Added
+
+- Add guides, which are migrated from Sisense public docs site.
+
 ## [0.3.0] - 2026-04-13
 
 ### Added
