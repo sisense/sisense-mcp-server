@@ -25,7 +25,8 @@ A Model Context Protocol (MCP) server that provides integration with Sisense ana
 
 ## Prerequisites
 
-- **Bun >= 1.0.0** (recommended) or **Node.js >= 18.0.0**
+- **Node.js >= 18.0.0** (required for local development and `npm`)
+- **Bun** for running project scripts (`dev`, `build`, `start`, tests): the `bun` package is a **devDependency**, so after `npm install` or `bun install` the Bun binary is available under `node_modules/.bin`—a global Bun install is not required. A global [Bun](https://bun.sh) install is optional.
 - Sisense instance with API access
 - Sisense API token
 - Playwright Chromium (installed automatically by `bun install` / `npm install` via `postinstall`)
@@ -34,6 +35,8 @@ A Model Context Protocol (MCP) server that provides integration with Sisense ana
 
 ```bash
 bun install
+# or
+npm install
 ```
 
 ## Usage
@@ -43,10 +46,13 @@ Start the server:
 ```bash
 # Development mode (hot reload)
 bun run dev
+# or
+npm run dev
 
 # Production mode
-bun run build
-bun run start
+bun run build && bun run start
+# or
+npm run build && npm run start
 ```
 
 Sessions are in-memory — chart state is lost if the server restarts.
@@ -70,9 +76,9 @@ Endpoints:
 
 ### Connecting your MCP client
 
-Use an MCP **streamable HTTP** URL. For Cursor, Claude Desktop, and similar clients, add a server entry with the MCP path (not the shell `bun` command).
+Use an MCP **streamable HTTP** URL. For Cursor, Claude Desktop, and similar clients, add a server entry with the MCP path (not a shell command such as `bun run dev` or `npm run dev`).
 
-If `SISENSE_URL` and `SISENSE_TOKEN` are set in the **server** environment (for example in `.env` loaded by the process that runs `bun run dev`), the client URL does not need to include credentials:
+If `SISENSE_URL` and `SISENSE_TOKEN` are set in the **server** environment (for example in `.env` loaded by the process that runs `bun run dev` or `npm run dev`), the client URL does not need to include credentials:
 
 ```json
 {
@@ -139,21 +145,27 @@ http://localhost:3001/mcp?sisenseUrl=https://your-instance.sisense.com&sisenseTo
 ```bash
 # Run server in development mode with hot reload
 bun run dev
+# or npm run dev
 
 # Build the project (View + server)
 bun run build
+# or npm run build
 
 # Build only the analytics View (dist/view.html)
 bun run build:view
+# or npm run build:view
 
 # Run tests
 bun test
+# or npm test (same as npm run test)
 
 # Type checking
 bun run type-check
+# or npm run type-check
 
 # Lint
 bun run lint
+# or npm run lint
 ```
 
 ## Security Considerations

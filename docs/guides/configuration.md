@@ -18,7 +18,7 @@ http://localhost:3001/mcp
 
 > **⚠️ Security note:** Embedding `sisenseToken` in a URL exposes it to browser history, client logs, proxy/tunnel logs, and server access logs. Prefer environment variables (`SISENSE_URL` / `SISENSE_TOKEN`) for any non-local or shared setup. Use URL query parameters only for local-only testing.
 
-**JSON config vs shell:** The `mcpServers` block belongs in your MCP client configuration file (for example Cursor MCP settings or `claude_desktop_config.json`). Do not mix it into the same code block as `bun run dev`.
+**JSON config vs shell:** The `mcpServers` block belongs in your MCP client configuration file (for example Cursor MCP settings or `claude_desktop_config.json`). Do not mix it into the same code block as `bun run dev` or `npm run dev`.
 
 <a id="url-encoding-query-params"></a>
 

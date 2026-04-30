@@ -12,7 +12,9 @@ export default defineConfig({
   webServer: {
     command: 'npx cross-env INPUT=view.html vite --port 5174',
     port: 5174,
-    reuseExistingServer: true,
+    // If true, any process already bound to 5174 is reused — not necessarily this Vite
+    // input, which breaks the MCP handshake (_appReady). Opt in with PW_REUSE_ANALYTICS_SERVER=1.
+    reuseExistingServer: process.env.PW_REUSE_ANALYTICS_SERVER === '1',
     timeout: 30_000,
   },
   projects: [

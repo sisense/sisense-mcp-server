@@ -37,7 +37,8 @@ No. The server uses natural language processing. You can describe what you want 
 
 ### What are the system requirements?
 
-- Bun 1.0.0 or later (recommended) or Node.js 18.0.0 or later
+- Node.js 18.0.0 or later (for `npm` / local development)
+- Bun runtime for project scripts: the `bun` package is a dev dependency, so `npm install` or `bun install` provides the Bun binary under `node_modules/.bin`—a global Bun install is not required (optional for convenience)
 - Access to a Sisense instance
 - A valid Sisense API token
 - An MCP client (Cursor, Claude Desktop, etc.)
@@ -81,9 +82,13 @@ SISENSE_TOKEN=your-api-token-here
 ```bash
 # Development mode
 bun run dev
+# or
+npm run dev
+
 # Production mode
-bun run build
-bun run start
+bun run build && bun run start
+# or
+npm run build && npm run start
 ```
 
 ### How do I connect my MCP client?
@@ -260,7 +265,7 @@ Check:
 Check:
 
 1. Server is running (`curl http://localhost:3001/health` — use your `PORT` if different)
-2. MCP client configuration uses **JSON** `mcpServers` with a streamable HTTP `url` (do not paste shell commands like `bun run dev` into the client config)
+2. MCP client configuration uses **JSON** `mcpServers` with a streamable HTTP `url` (do not paste shell commands such as `bun run dev` or `npm run dev` into the client config)
 3. Firewall isn't blocking the connection
 4. Restart your MCP client after the server starts
 5. If localhost HTTP never connects from your client or network, use an HTTPS tunnel (for example [ngrok](https://ngrok.com/)) and point the client at `https://.../mcp` — see the tunneling note in [Configuration](./configuration.md).
@@ -290,7 +295,7 @@ Check:
 
 1. Server is running
 2. The `__screenshots__` directory exists and is writable
-3. Playwright browsers are installed: `bunx playwright install`
+3. Playwright browsers are installed (normally via `postinstall` after `npm install` / `bun install`); if needed: `npx playwright install chromium` or `bunx playwright install chromium`
 4. URL format is correct: `http://localhost:<PORT>/screenshots/[filename]`
 
 ### I get authentication errors

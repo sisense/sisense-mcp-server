@@ -6,7 +6,8 @@ title: Sisense MCP Server Quick Start Guide
 
 ## Prerequisites
 
-- Bun 1.0.0 or later (recommended) or Node.js 18.0.0 or later
+- Node.js 18.0.0 or later (required for `npm` / local development)
+- Bun runtime for project scripts (`dev`, `build`, `start`, tests): the `bun` package is listed in `devDependencies`, so `npm install` or `bun install` places the Bun binary in `node_modules/.bin`—you do **not** need Bun installed globally. Installing [Bun](https://bun.sh) globally is optional and can be faster for everyday use.
 - Access to a Sisense instance
 - A Sisense API token
 - Playwright Chromium (installed automatically by `bun install` / `npm install` via `postinstall`)

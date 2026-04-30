@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.1] - 2026-04-30
+
+### Security
+
+- Resolve **high** severity advisories from `bun audit`: bump Vite to 6.4.2+ and AWS SDK packages; add npm-style `overrides` for transitive packages (for example `lodash`, `lodash-es`, `socket.io-parser`, `minimatch`, `flatted`, `fast-xml-parser`, `path-to-regexp`, `picomatch`, `brace-expansion`) where upstream SDKs had not yet picked up patched releases.
+
+### Fixed
+
+- Add the `bun` package as a devDependency so `npm run dev`, `npm run build`, `npm run start`, and tests resolve the Bun runtime from `node_modules/.bin` without requiring a global Bun install.
+
+### Changed
+
+- Document npm alongside Bun in the README, quick start, FAQ, and configuration guide (prerequisites, install/run commands, and MCP JSON vs shell commands).
+
 ## [0.4.0] - 2026-04-27
 
 ### Added
