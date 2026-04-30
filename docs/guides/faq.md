@@ -343,6 +343,10 @@ The server returns chart visualizations (screenshots). To export data, use Sisen
 
 ## Best practices
 
+### Can I connect the MCP server to production Sisense if we have no dev or staging instance?
+
+Yes. The server does not block production URLs; the README recommendation is **risk management**, not a disclosed vulnerability or a hard product restriction. Prefer dev or staging when you have them so autonomous AI traffic and mistaken prompts affect non-production first. If production is your only environment, deploy with tight governance: a least-privilege Sisense API token, explicit human approval for every tool call in your MCP client, and monitoring. Most current tools are read-oriented (discovery, queries, local chart screenshots); future tools that create or manage BI assets in Sisense will make production governance even more important.
+
 ### What are best practices for using the server?
 
 - **Start simple:** Begin with basic queries, then add complexity

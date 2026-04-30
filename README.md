@@ -108,11 +108,11 @@ https://your-ngrok-url.ngrok-free.app/mcp?sisenseUrl=https://your-instance.sisen
 
 ## Configuration
 
-| Parameter      | Description                                                              |
-| -------------- | ------------------------------------------------------------------------ |
-| `sisenseUrl`   | Full URL to your Sisense instance (e.g., `https://instance.sisense.com`). In the query string, pass the value **percent-encoded**. |
+| Parameter      | Description                                                                                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sisenseUrl`   | Full URL to your Sisense instance (e.g., `https://instance.sisense.com`). In the query string, pass the value **percent-encoded**.              |
 | `sisenseToken` | Sisense API authentication token. In the query string, pass the value **percent-encoded** (required if the token contains `&`, `=`, `+`, etc.). |
-| `PORT`         | (Optional) Server port, defaults to 3001                                 |
+| `PORT`         | (Optional) Server port, defaults to 3001                                                                                                        |
 
 The server automatically derives its public base URL from request headers, so it works correctly behind proxies like ngrok. For how to build encoded MCP URLs, see [URL encoding for query parameters](docs/guides/configuration.md#url-encoding-query-params).
 
@@ -122,11 +122,11 @@ Defaults suit most setups; change flags when you need a specific client behavior
 
 These query params override the corresponding env vars on a per-connection basis. Accepted values: `true`, `false`, `1`, `0` (case-insensitive).
 
-| Query parameter                  | Env var equivalent                   | Default | Description                                                                  |
-| -------------------------------- | ------------------------------------ | ------- | ---------------------------------------------------------------------------- |
+| Query parameter                  | Env var equivalent                   | Default | Description                                                                                                              |
+| -------------------------------- | ------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `mcpAppEnabled`                  | `MCP_APP_ENABLED`                    | `true`  | Renders the chart in an interactive app UI (supported in Claude); set to `false` for tool mode (image/screenshot output) |
-| `toolBuildQueryEnabled`          | `TOOL_BUILD_QUERY_ENABLED`           | `false` | Enable the `buildQuery` tool for executing analytics queries                 |
-| `toolBuildChartNarrativeEnabled` | `TOOL_BUILD_CHART_NARRATIVE_ENABLED` | `true`  | Include NLG narrative/insights in the build chart tool response              |
+| `toolBuildQueryEnabled`          | `TOOL_BUILD_QUERY_ENABLED`           | `false` | Enable the `buildQuery` tool for executing analytics queries                                                             |
+| `toolBuildChartNarrativeEnabled` | `TOOL_BUILD_CHART_NARRATIVE_ENABLED` | `true`  | Include NLG narrative/insights in the build chart tool response                                                          |
 
 Example URL with all three overrides (encode `sisenseUrl` and `sisenseToken` values when they are not simple alphanumeric placeholders):
 
@@ -164,7 +164,7 @@ bun run lint
 
 ⚠️ NEVER bind to 0.0.0.0 in production - use 127.0.0.1 or Unix socket
 
-⚠️ NEVER connect to production Sisense - use dev/staging environments only
+⚠️ Recommended: Use dev or staging Sisense when you have them. Autonomous AI clients can issue many API calls, and prompts can be ambiguous. Non-production reduces the impact of mistakes and surprises.
 
 ⚠️ Enable authentication - never run without auth
 
