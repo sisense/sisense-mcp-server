@@ -14,14 +14,27 @@ title: Sisense MCP Server Quick Start Guide
 
 ## Clone and Install
 
-If you have not done so already, clone the repository:
+Choose your preferred method to clone the repository:
+
+**Option A: HTTPS (Recommended for quick setup or restricted networks)**
+
+```bash
+git clone https://github.com/sisense/sisense-mcp-server.git
+```
+
+**Option B: SSH (Requires SSH keys configured in GitHub)**
 
 ```bash
 git clone git@github.com:sisense/sisense-mcp-server.git
+```
+
+**Navigate to the directory and install dependencies:**
+
+```bash
 cd sisense-mcp-server
-# Install dependencies
+# Install dependencies using bun
 bun install
-# or
+# Or using npm
 npm install
 ```
 
