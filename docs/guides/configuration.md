@@ -75,6 +75,8 @@ In the example URLs below, `YOUR_TOKEN` and bare `https://…` values are placeh
 - **Default `true`:** In MCP Apps–capable clients, charts can render inside the app UI.
 - **Set `false`:** Use classic tool mode (for example chart as image / screenshot-oriented flow) when the client does not support apps or you want non-interactive output.
 
+**Claude (claude.ai, Claude Desktop):** With MCP App mode on, the chart loads from Anthropic origins on `*.claudemcpcontent.com`. Your Sisense **CORS Allowed Origins** (Admin → Security Settings) must include `https://*.claudemcpcontent.com` or the widget can fail with a network/CORS error. See [FAQ: Claude MCP App charts and CORS](./faq.md#claude-mcp-app-charts-and-network-or-cors-errors).
+
 Minimal example (credentials on URL; disable MCP App):
 
 ```text

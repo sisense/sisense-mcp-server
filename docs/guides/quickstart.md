@@ -126,11 +126,13 @@ With credentials in `.env` (recommended for local use), the `url` above is enoug
 
 3. Restart Cursor.
 
-### For Claude Desktop
+### For Claude (Desktop or claude.ai)
 
-1. Edit `claude_desktop_config.json` (location varies by OS).
-2. Add the server configuration (same JSON as above).
-3. Restart Claude Desktop.
+**Claude Desktop:** Edit `claude_desktop_config.json` (location varies by OS), add the server configuration (same JSON as above), and restart Claude Desktop.
+
+**claude.ai:** Add the MCP connector in Claude’s settings using the same streamable HTTP `/mcp` URL (tunneling and [URL encoding](./configuration.md#url-encoding-query-params) rules apply the same way).
+
+**Interactive charts (MCP App mode, default):** On **either** surface, if charts or widgets fail with a **network** or **CORS** error, add `https://*.claudemcpcontent.com` to your Sisense instance **CORS Allowed Origins** (**Admin** → **Security Settings**). Use the `https://*.claudemcpcontent.com` pattern; `https://claudemcpcontent.com` alone often does not match Anthropic’s frame origins. See [FAQ: Claude MCP App charts and CORS](./faq.md#claude-mcp-app-charts-and-network-or-cors-errors).
 
 Optional server behavior (for example an extra query tool, MCP App vs image mode) is controlled with environment variables or URL parameters. See [Configuration](./configuration.md).
 
@@ -200,6 +202,12 @@ Charts are rendered and accessible at `http://localhost:3001/screenshots/` (or i
 - Check that data source has required fields
 - Try a simpler prompt first
 - Check server logs for detailed error
+
+### Claude (claude.ai or Desktop): chart does not load (network / CORS)
+
+**Problem:** Tools work but the chart widget in **claude.ai** or **Claude Desktop** shows a network or CORS error.
+
+**Solution:** Add `https://*.claudemcpcontent.com` to Sisense **CORS Allowed Origins** under **Admin** → **Security Settings**. See [FAQ: Claude MCP App charts and CORS](./faq.md#claude-mcp-app-charts-and-network-or-cors-errors).
 
 ## Next Steps
 

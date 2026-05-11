@@ -112,6 +112,18 @@ Behind a public HTTPS tunnel (example):
 https://your-ngrok-url.ngrok-free.app/mcp?sisenseUrl=https://your-instance.sisense.com&sisenseToken=your-api-token
 ```
 
+### Claude (claude.ai and Desktop): Sisense CORS for interactive charts
+
+In MCP App mode (the default), Anthropic Claude renders charts inside the MCP content UI—on **claude.ai** or **Claude Desktop**. The browser loads your Sisense instance from origins under `*.claudemcpcontent.com`, so Sisense must allow those origins or the widget fails with a network or CORS error.
+
+In your Sisense instance, go to **Admin** → **Security Settings** → **CORS Allowed Origins** and add:
+
+`https://*.claudemcpcontent.com`
+
+Use this **subdomain wildcard** form. A single origin such as `https://claudemcpcontent.com` (no `*.`) may not match the actual frame origins and charts can still fail to load.
+
+More context: [FAQ: Claude MCP App charts and CORS](docs/guides/faq.md#claude-mcp-app-charts-and-network-or-cors-errors).
+
 ## Configuration
 
 | Parameter      | Description                                                                                                                                     |

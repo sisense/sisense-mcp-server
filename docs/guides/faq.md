@@ -260,6 +260,18 @@ Check:
 3. `SISENSE_TOKEN` is valid
 4. The configured port (default **3001**) is not already in use
 
+### Claude MCP App charts and network or CORS errors
+
+If you use **Anthropic Claude** with **MCP App mode** (default; interactive chart in the app)—whether on **claude.ai** or **Claude Desktop**—the chart loads your Sisense APIs from a browser context on **`*.claudemcpcontent.com`**. Sisense must explicitly allow that origin pattern or the browser blocks the request.
+
+**Fix:** In Sisense, open **Admin** → **Security Settings** → **CORS Allowed Origins** and add:
+
+`https://*.claudemcpcontent.com`
+
+The MCP chart runs on **subdomains** of `claudemcpcontent.com` (for example `https://abc123.claudemcpcontent.com`), so the browser sends an **`Origin`** on that subdomain, not on the bare apex. **`https://*.claudemcpcontent.com`** matches those origins; **`https://claudemcpcontent.com`** does not include subdomains, so CORS can still block the widget.
+
+This is a Sisense-side setting, not a change to the MCP server URL.
+
 ### I can't connect to my MCP client
 
 Check:
