@@ -3,7 +3,8 @@ name: sisense-mcp-server
 description: >-
   Context, pitfalls, and patterns for working on the sisense-mcp-server repo.
   Covers session state architecture, ID generation, MCP app vs tool mode,
-  security constraints, and lessons from past bugs.
+  analytics view layout, security constraints,
+  and lessons from past bugs.
 ---
 
 # Sisense MCP Server — Repo Guide
@@ -156,6 +157,18 @@ Feature flags are **enabled by default** (opt-out, not opt-in). Check both `'fal
 | Tool mode          | PNG screenshot, `imageUrl` in response                   | `server.registerTool()` |
 
 When adding a new tool, decide up-front which mode applies and wire it conditionally if needed.
+
+---
+
+## Pitfall: MCP App resize loop (analytics view)
+
+> **ext-apps ≥ 1.7.2:** Unbounded `ChartWidget` layout + `autoResize` causes infinite loading / `host-context-changed` spam.
+
+**Do:** Keep default `autoResize: true`. Wrap `ChartWidget` in `.chartContainer` (`width: 100%`, tuned `min-height`) so CSDK has a stable size anchor.
+
+**Don't:** `min-height: 100vh` on `#root` or `.main`; `autoResize: false` without `sendSizeChanged`; gate render on `hostContext` (gate on `!app` only).
+
+See `src/analytics-view/`.
 
 ---
 

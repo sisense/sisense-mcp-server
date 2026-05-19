@@ -141,13 +141,15 @@ function AnalyticsAppInner({
 
   return (
     <main className={styles.main} style={paddingStyle}>
-      <SisenseContextProvider
-        url={parsed.sisenseUrl}
-        token={parsed.sisenseToken}
-        showRuntimeErrors={true}
-      >
-        <ChartWidget {...parsed.widgetProps} />
-      </SisenseContextProvider>
+      <div className={styles.chartContainer}>
+        <SisenseContextProvider
+          url={parsed.sisenseUrl}
+          token={parsed.sisenseToken}
+          showRuntimeErrors={true}
+        >
+          <ChartWidget {...parsed.widgetProps} />
+        </SisenseContextProvider>
+      </div>
     </main>
   );
 }
@@ -159,6 +161,7 @@ function AnalyticsApp() {
   const { app, error } = useApp({
     appInfo: { name: 'Sisense Analytics View', version: '1.0.0' },
     capabilities: {},
+    // default autoResize: true — keep enabled; chartContainer anchors CSDK layout (see skill)
     onAppCreated: (a: App) => {
       a.ontoolresult = async (result) => {
         console.info('[SisenseAnalytics] Tool result received', result);
@@ -186,13 +189,6 @@ function AnalyticsApp() {
     );
   }
   if (!app) {
-    return (
-      <div className={styles.placeholder}>
-        <p>Connecting…</p>
-      </div>
-    );
-  }
-  if (!hostContext) {
     return (
       <div className={styles.placeholder}>
         <p>Connecting…</p>
