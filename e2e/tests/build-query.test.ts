@@ -53,7 +53,7 @@ describe('Build Query Tool E2E', () => {
   );
 
   it(
-    'should persist QueryResult in session state under query-${queryId}',
+    'should persist QueryResult in session state under queryId key',
     async () => {
       const { TOOL_NAME_BUILD_QUERY } = await import('@sisense/sdk-ai-core');
       const { client, sessionState } = await createMcpTestFixture();
@@ -71,7 +71,7 @@ describe('Build Query Tool E2E', () => {
       const structured = result.structuredContent as Record<string, unknown>;
       const queryId = structured.queryId as string;
 
-      const stored = sessionState.get(`query-${queryId}`) as Record<string, unknown> | undefined;
+      const stored = sessionState.get(queryId) as Record<string, unknown> | undefined;
       expect(stored).toBeDefined();
       expect(stored).toHaveProperty('queryId', queryId);
       expect(stored).toHaveProperty('nlqResult');

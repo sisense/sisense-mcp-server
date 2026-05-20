@@ -12,7 +12,8 @@ import type { SessionState } from './types/sessions.js';
 import { setupMcpServer } from './mcp-server.js';
 import { sanitizeError, validateUrl, validateToken } from './utils/string-utils.js';
 import { applyFeatureFlagsToSession } from './utils/feature-flags.js';
-
+import { conversationKeys, devDebug, mcpRequestLabel } from './utils/dev-debug.js';
+import { refreshSessionBaseUrl } from './utils/session-query-cache.js';
 const PACKAGE_VERSION = (
   JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as {
     version: string;
@@ -48,41 +49,9 @@ function getCredentialKey(sisenseUrl: string, sisenseToken: string): string {
   return createHash('sha256').update(`${sisenseUrl}:${sisenseToken}`).digest('hex').slice(0, 16);
 }
 
-// Returns a fresh clone of existingState ready for a new conversation:
-// clones the shared object (so active sessions using it are unaffected), clears
-// per-conversation LLM context keys, and refreshes baseUrl from the current
-// request headers (so screenshot URLs remain correct if the proxy/ngrok host
-// has changed).
-//
-// Cleared:
-//   chart:summaries  — chart descriptions passed to buildChartEngine
-//   chart-${id}      — raw widget props used by retrieveChart() callback
-//
-// NOT cleared: chart:payload:${id}
-//   These MCP resource payloads are intentionally preserved so the analytics
-//   app can re-render charts when a user revisits an old conversation. They do
-//   contain sisenseUrl/sisenseToken, but those credentials are identical to the
-//   top-level 'sisenseUrl'/'sisenseToken' keys already in state (which are also
-//   not cleared). The state itself is keyed by credential hash, so all entries
-//   belong to the same authenticated user. No additional credential exposure is
-//   introduced by leaving chart:payload entries intact.
-//
-// NOT cleared: credential/client keys (sisenseUrl, sisenseToken, httpClient, openAIClient)
-function resetConversationState(existingState: SessionState, req: IncomingMessage): SessionState {
-  const freshState = new Map(existingState);
-  for (const key of freshState.keys()) {
-    if (
-      key === 'chart:summaries' ||
-      (typeof key === 'string' && (key.startsWith('chart-') || key.startsWith('query-')))
-    ) {
-      freshState.delete(key);
-    }
-  }
-  const protocol = req.headers['x-forwarded-proto'] || 'http';
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
-  freshState.set('baseUrl', `${protocol}://${host}`);
-  return freshState;
-}
+// Re-initialize with the same credentials reuses persistentStates in-place (no clone/clear).
+// ChatGPT opens multiple MCP sessions (model + app); that is not a new user conversation.
+// Query cache is bounded via trimQueryCache in build-query.ts (MCP_QUERY_CACHE_MAX_ENTRIES).
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
@@ -195,9 +164,16 @@ const server = createServer(async (req, res) => {
       let transport: StreamableHTTPServerTransport;
 
       const existingSession = sessionId ? sessions.get(sessionId) : undefined;
+      const requestLabel = mcpRequestLabel(parsedBody);
 
       if (existingSession) {
         transport = existingSession.transport;
+        devDebug('[mcp-session] mcp_request', {
+          branch: 'existing_session',
+          mcpSessionId: sessionId,
+          ...requestLabel,
+          conversationKeys: conversationKeys(existingSession.state),
+        });
       } else if (!sessionId && isInitializeRequest(parsedBody)) {
         const sisenseUrl =
           url.searchParams.get('sisenseUrl') ?? process.env.SISENSE_URL?.trim() ?? null;
@@ -211,8 +187,13 @@ const server = createServer(async (req, res) => {
           const existingState = persistentStates.get(credKey);
 
           if (existingState) {
-            state = resetConversationState(existingState, req);
-            persistentStates.set(credKey, state);
+            state = existingState;
+            refreshSessionBaseUrl(state, req);
+            devDebug('[mcp-session] initialize_reuse', {
+              credKeyPrefix: credKey.slice(0, 8),
+              conversationKeys: conversationKeys(state),
+              activeSessions: sessions.size,
+            });
           } else {
             try {
               // Validate inputs with security constraints
@@ -261,6 +242,10 @@ const server = createServer(async (req, res) => {
               state.set('openAIClient', openAIClient);
 
               persistentStates.set(credKey, state);
+              devDebug('[mcp-session] initialize_new_cred', {
+                credKeyPrefix: credKey.slice(0, 8),
+                activeSessions: sessions.size,
+              });
             } catch (error) {
               const sanitized = sanitizeError(error);
               console.error('Failed to initialize credential-based state:', sanitized.message);
@@ -283,19 +268,39 @@ const server = createServer(async (req, res) => {
           state = new Map();
         }
 
+        devDebug('[mcp-session] mcp_request', {
+          branch: 'new_initialize',
+          ...requestLabel,
+          conversationKeys: conversationKeys(state),
+        });
+
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (id) => {
             sessions.set(id, { transport, state });
+            devDebug('[mcp-session] session_bound', {
+              mcpSessionId: id,
+              conversationKeys: conversationKeys(state),
+            });
           },
           onsessionclosed: (id) => {
             sessions.delete(id);
+            devDebug('[mcp-session] session_closed', {
+              mcpSessionId: id,
+              activeSessions: sessions.size,
+            });
           },
         });
 
         transport.onclose = () => {
           if (transport.sessionId) {
-            sessions.delete(transport.sessionId);
+            const closedId = transport.sessionId;
+            sessions.delete(closedId);
+            devDebug('[mcp-session] session_closed', {
+              mcpSessionId: closedId,
+              activeSessions: sessions.size,
+              reason: 'transport_onclose',
+            });
           }
         };
 
@@ -303,6 +308,11 @@ const server = createServer(async (req, res) => {
         const mcpServer = await setupMcpServer(state);
         await mcpServer.connect(transport);
       } else {
+        devDebug('[mcp-session] mcp_request', {
+          branch: 'rejected',
+          mcpSessionId: sessionId ?? null,
+          ...requestLabel,
+        });
         console.warn(
           'MCP POST rejected: sessionId=',
           sessionId ?? 'missing',

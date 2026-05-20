@@ -3,7 +3,6 @@ import { buildChart } from './build-chart.js';
 import { createMockSessionState } from '@/__test-helpers__/mock-session-state.js';
 import { MOCK_CHART_ID } from '@/__test-helpers__/mock-engines.js';
 import { MISSING_SISENSE_SESSION_MESSAGE } from '@/utils/sisense-session.js';
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyResult = Record<string, any>;
 
@@ -52,19 +51,29 @@ describe('buildChart - MCP App Mode (default)', () => {
     expect(structured).not.toHaveProperty('imageUrl');
   });
 
-  it('stores chart payload in session state with sisenseUrl, sisenseToken, serializedWidgetProps', async () => {
+  it('returns artifactPayload in structuredContent (not in LLM text)', async () => {
     const sessionState = createMockSessionState();
 
-    await buildChart(
+    const result: AnyResult = await buildChart(
       { dataSourceTitle: 'Sample ECommerce', userPrompt: 'show revenue' },
       sessionState,
     );
 
-    const payload = sessionState.get(`chart:payload:${MOCK_CHART_ID}`) as Record<string, unknown>;
+    const structured = result.structuredContent as Record<string, unknown>;
+    expect(structured).not.toHaveProperty('artifactUrl');
+
+    const payload = structured.artifactPayload as Record<string, unknown>;
     expect(payload).toBeDefined();
+    expect(payload.type).toBe('chart');
     expect(payload.sisenseUrl).toBe('https://mock.sisense.com');
     expect(payload.sisenseToken).toBe('mock-token-abc123');
     expect(payload.serializedWidgetProps).toBeDefined();
+
+    // Credentials must NOT appear in content[0].text (which goes to the LLM)
+    const textContent = JSON.parse(result.content[0].text) as Record<string, unknown>;
+    expect(textContent).not.toHaveProperty('artifactPayload');
+    expect(textContent).not.toHaveProperty('artifactUrl');
+    expect(JSON.stringify(textContent)).not.toContain('mock-token-abc123');
   });
 
   it('does not include _meta in the tool response', async () => {

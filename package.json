@@ -1,6 +1,6 @@
 {
   "name": "@sisense/mcp-server",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "mcpName": "io.github.sisense/sisense-mcp-server",
   "homepage": "https://github.com/sisense/sisense-mcp-server#readme",
   "description": "MCP server leveraging Sisense Intelligence for actionable insights and analytics.",
@@ -32,7 +32,7 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production INPUT=view.html vite build && bun build src/sse-server.ts --outdir dist --target node --format esm --splitting",
     "build:view": "cross-env NODE_ENV=production INPUT=view.html vite build",
-    "dev": "NODE_ENV=production bun run --watch src/sse-server.ts",
+    "dev": "NODE_ENV=development bun run --watch src/sse-server.ts",
     "start": "bun run dist/sse-server.js",
     "test": "bun test --preload ./src/__test-helpers__/setup.ts ./src/**/*.test.ts",
     "test:e2e": "cross-env NODE_ENV=production bun test ./e2e/tests/*.test.ts",

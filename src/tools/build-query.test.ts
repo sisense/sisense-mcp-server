@@ -48,7 +48,7 @@ describe('buildQuery - success', () => {
     expect(structured.queryId).toMatch(/^query-[0-9a-f]{8}$/);
   });
 
-  it('stores QueryResult in session state under query-${queryId}', async () => {
+  it('stores QueryResult in session state under queryId key', async () => {
     const sessionState = createMockSessionState();
 
     const result: AnyResult = await buildQuery(
@@ -59,7 +59,7 @@ describe('buildQuery - success', () => {
     const structured = result.structuredContent as Record<string, unknown>;
     const queryId = structured.queryId as string;
 
-    const stored = sessionState.get(`query-${queryId}`);
+    const stored = sessionState.get(queryId);
     expect(stored).toBeDefined();
     expect((stored as Record<string, unknown>).queryId).toBe(queryId);
   });
@@ -104,7 +104,7 @@ describe('buildQuery - session state', () => {
     );
 
     const queryId = result.structuredContent.queryId as string;
-    const stored = sessionState.get(`query-${queryId}`) as Record<string, unknown>;
+    const stored = sessionState.get(queryId) as Record<string, unknown>;
 
     expect(stored.nlqResult).toBeDefined();
     expect((stored.nlqResult as Record<string, unknown>).chartState).toBeDefined();
@@ -126,8 +126,8 @@ describe('buildQuery - session state', () => {
     const id2 = r2.structuredContent.queryId as string;
 
     expect(id1).not.toBe(id2);
-    expect(sessionState.get(`query-${id1}`)).toBeDefined();
-    expect(sessionState.get(`query-${id2}`)).toBeDefined();
+    expect(sessionState.get(id1)).toBeDefined();
+    expect(sessionState.get(id2)).toBeDefined();
   });
 });
 

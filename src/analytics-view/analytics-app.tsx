@@ -12,11 +12,25 @@ import { ChartWidget, SisenseContextProvider } from '@sisense/sdk-ui';
 import { ExtendedChartWidgetProps } from '@sisense/sdk-ai-core';
 import { CustomSuperJSON, CustomSuperJSONResult } from '@sisense/sdk-ui/analytics-composer/node';
 
-interface ChartPayload {
+// Discriminated union for BI artifact types delivered inline via structuredContent.artifactPayload.
+// Add new types here as new tools (buildDashboard, etc.) are introduced.
+type BiArtifactType = 'chart' | 'dashboard';
+
+interface ChartArtifact {
+  type: 'chart';
   sisenseUrl: string;
   sisenseToken: string;
   serializedWidgetProps: CustomSuperJSONResult;
 }
+
+interface DashboardArtifact {
+  type: 'dashboard';
+  sisenseUrl: string;
+  sisenseToken: string;
+  // dashboardProps: DashboardProps  — add when buildDashboard lands
+}
+
+type BiArtifact = ChartArtifact | DashboardArtifact;
 
 interface ParsedToolResult {
   sisenseUrl: string;
@@ -28,44 +42,20 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function isChartPayload(value: unknown): value is ChartPayload {
+function isBiArtifact(value: unknown): value is BiArtifact {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
   return (
-    isNonEmptyString(v.sisenseUrl) &&
-    isNonEmptyString(v.sisenseToken) &&
-    v.serializedWidgetProps !== null &&
-    v.serializedWidgetProps !== undefined
+    isNonEmptyString(v.type) && isNonEmptyString(v.sisenseUrl) && isNonEmptyString(v.sisenseToken)
   );
-}
-
-function extractChartId(toolResult: CallToolResult): string | undefined {
-  const structured = toolResult.structuredContent as Record<string, unknown> | undefined;
-  if (isNonEmptyString(structured?.chartId)) return structured!.chartId as string;
-  const firstContent = Array.isArray(toolResult.content) ? toolResult.content[0] : undefined;
-  const rawText =
-    firstContent && typeof (firstContent as Record<string, unknown>).text === 'string'
-      ? (firstContent as { text: string }).text
-      : undefined;
-  if (rawText) {
-    try {
-      const parsed = JSON.parse(rawText) as Record<string, unknown>;
-      if (isNonEmptyString(parsed.chartId)) return parsed.chartId as string;
-    } catch {
-      // ignore parse errors
-    }
-  }
-  return undefined;
 }
 
 function AnalyticsAppInner({
   hostContext,
   toolResult,
-  app,
 }: {
   hostContext?: McpUiHostContext;
   toolResult?: CallToolResult;
-  app: App;
 }) {
   const [parsed, setParsed] = useState<ParsedToolResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -76,42 +66,49 @@ function AnalyticsAppInner({
     setParsed(null);
     setLoadError(null);
 
-    const chartId = extractChartId(toolResult);
-    if (!chartId) {
-      setLoadError(
-        deriveToolFailureMessage(toolResult, {
-          fallback: 'The chart tool did not return a chart id.',
-        }),
-      );
-      return;
-    }
+    const structured = toolResult.structuredContent as Record<string, unknown> | undefined;
 
-    app
-      .readServerResource({ uri: `ui://sisense-analytics/chart/${chartId}` })
-      .then((resourceResult) => {
-        const text =
-          Array.isArray(resourceResult.contents) && resourceResult.contents.length > 0
-            ? (resourceResult.contents[0] as { text?: string }).text
-            : undefined;
-        if (!text) throw new Error('Empty resource content');
-        const payload = JSON.parse(text) as unknown;
-        if (!isChartPayload(payload)) throw new Error('Invalid chart resource payload');
+    function renderArtifact(data: unknown): void {
+      if (!isBiArtifact(data)) throw new Error('Invalid artifact payload');
+
+      if (data.type === 'chart') {
+        const artifact = data as ChartArtifact;
         const widgetProps = CustomSuperJSON.deserialize(
-          payload.serializedWidgetProps,
+          artifact.serializedWidgetProps,
         ) as ExtendedChartWidgetProps;
         if (!widgetProps) throw new Error('Deserialized widget props is null');
         setParsed({
-          sisenseUrl: payload.sisenseUrl,
-          sisenseToken: payload.sisenseToken,
+          sisenseUrl: artifact.sisenseUrl,
+          sisenseToken: artifact.sisenseToken,
           widgetProps,
         });
-      })
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : 'Failed to fetch chart resource';
-        console.error('[SisenseAnalytics] Failed to fetch chart resource', error);
+      } else {
+        throw new Error(`Unsupported artifact type: ${(data as { type: BiArtifactType }).type}`);
+      }
+    }
+
+    if (isBiArtifact(structured?.artifactPayload)) {
+      try {
+        const payload = structured!.artifactPayload as BiArtifact;
+        renderArtifact(payload);
+        console.debug('[SisenseAnalytics] Rendered chart from structuredContent.artifactPayload', {
+          artifactType: payload.type,
+          chartId: structured?.chartId,
+        });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to render artifact';
+        console.error('[SisenseAnalytics] Failed to render artifact', error);
         setLoadError(message);
-      });
-  }, [toolResult, app]);
+      }
+      return;
+    }
+
+    setLoadError(
+      deriveToolFailureMessage(toolResult, {
+        fallback: 'The chart tool did not return an artifact payload.',
+      }),
+    );
+  }, [toolResult]);
 
   if (loadError) {
     return (
@@ -196,7 +193,7 @@ function AnalyticsApp() {
     );
   }
 
-  return <AnalyticsAppInner hostContext={hostContext} toolResult={toolResult} app={app} />;
+  return <AnalyticsAppInner hostContext={hostContext} toolResult={toolResult} />;
 }
 
 createRoot(document.getElementById('root')!).render(

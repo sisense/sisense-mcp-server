@@ -3,12 +3,16 @@ import {
   registerAppTool,
   RESOURCE_MIME_TYPE,
 } from '@modelcontextprotocol/ext-apps/server';
-import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildChart, getBuildChartOutputSchema } from './tools/build-chart.js';
+import {
+  buildChart,
+  getBuildChartOutputSchema,
+  withBuildChartQueryId,
+} from './tools/build-chart.js';
 import { buildQuery, buildQueryOutputSchema } from './tools/build-query.js';
 import { getDataSources, getDataSourcesOutputSchema } from './tools/get-data-sources.js';
 import {
@@ -121,8 +125,14 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
 
     const buildChartOutputSchema = getBuildChartOutputSchema(getFeatureFlags(sessionState));
     const chartInputSchema = toolBuildQueryEnabled
-      ? buildChartSchemaNaturalConversation
-      : buildChartSchema;
+      ? withBuildChartQueryId(buildChartSchemaNaturalConversation.shape)
+      : buildChartSchema.shape;
+
+    const buildChartDescription =
+      'Build a chart from a Sisense data source using natural language user prompt. Chart type will be automatically determined by Sisense AI based on the user prompt.' +
+      (toolBuildQueryEnabled
+        ? ' Optionally pass the queryId returned by buildQuery to visualize that query without re-running it.'
+        : '');
 
     if (mcpAppEnabled) {
       registerAppTool(
@@ -130,9 +140,8 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
         TOOL_NAME_BUILD_CHART,
         {
           title: 'Build Sisense Chart from User Prompt',
-          description:
-            'Build a chart from a Sisense data source using natural language user prompt. Chart type will be automatically determined by Sisense AI based on the user prompt.',
-          inputSchema: chartInputSchema.shape,
+          description: buildChartDescription,
+          inputSchema: chartInputSchema,
           outputSchema: buildChartOutputSchema.shape,
           _meta: { ui: { resourceUri: ANALYTICS_RESOURCE_URI } },
         },
@@ -145,9 +154,8 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
         TOOL_NAME_BUILD_CHART,
         {
           title: 'Build Sisense Chart from User Prompt',
-          description:
-            'Build a chart from a Sisense data source using natural language user prompt. Chart type will be automatically determined by Sisense AI based on the user prompt.',
-          inputSchema: chartInputSchema.shape,
+          description: buildChartDescription,
+          inputSchema: chartInputSchema,
           outputSchema: buildChartOutputSchema.shape,
         },
         async (args) => {
@@ -182,30 +190,6 @@ export async function setupMcpServer(sessionState?: SessionState): Promise<McpSe
 
     // Register prompts for guided workflows
     registerPrompts(server);
-
-    // Register resource template for chart data (used by analytics app to fetch
-    // credentials server-side instead of relying on _meta in tool response)
-    server.registerResource(
-      'chart-data',
-      new ResourceTemplate('ui://sisense-analytics/chart/{chartId}', { list: undefined }),
-      { mimeType: 'application/json' },
-      async (uri, vars) => {
-        const chartId = String(vars.chartId);
-        const payload = sessionState?.get(`chart:payload:${chartId}`);
-        if (!payload) {
-          throw new Error(`Chart data not found for chartId: ${chartId}`);
-        }
-        return {
-          contents: [
-            {
-              uri: uri.href,
-              mimeType: 'application/json',
-              text: JSON.stringify(payload),
-            },
-          ],
-        };
-      },
-    );
 
     return server;
   } catch (error) {

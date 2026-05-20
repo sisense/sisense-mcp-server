@@ -32,7 +32,11 @@ mock.module('@sisense/sdk-ai-core', () => ({
   buildChartSchemaNaturalConversation: z.object({
     dataSourceTitle: z.string(),
     userPrompt: z.string(),
-    queryId: z.string().nullable().optional(),
+    queryId: z
+      .string()
+      .regex(/^query-[0-9a-f]{8}$/)
+      .optional()
+      .describe('Query ID from buildQuery (format: query-xxxxxxxx).'),
   }),
   buildQuerySchema: z.object({ dataSourceTitle: z.string(), queryPrompt: z.string() }),
 

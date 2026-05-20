@@ -39,28 +39,27 @@ describe('Analytics App Render E2E', () => {
       expect(result).toBeDefined();
       assertNoError(result);
 
-      // 2. Extract chartId and fetch payload via resource (credentials stay server-side)
+      // 2. Assert inline artifactPayload is in structured output
       const structured = result.structuredContent as Record<string, unknown> | undefined;
       expect(structured).toHaveProperty('chartId');
-      const chartId = structured!.chartId as string;
+      expect(structured).toHaveProperty('artifactPayload');
+      expect(structured).not.toHaveProperty('artifactUrl');
+      const payload = structured!.artifactPayload as Record<string, unknown>;
+      expect(payload.type).toBe('chart');
+      expect(payload).toHaveProperty('sisenseUrl');
+      expect(payload).toHaveProperty('sisenseToken');
+      expect(payload).toHaveProperty('serializedWidgetProps');
 
-      const resource = await client.readResource({
-        uri: `ui://sisense-analytics/chart/${chartId}`,
-      });
-      const payloadText = (resource.contents[0] as { text?: string }).text;
-      expect(payloadText).toBeDefined();
-
-      // 3. Persist the tool result + chart payload for Playwright
+      // 3. Persist the tool result for Playwright (inline delivery via postMessage)
       const testId = randomBytes(8).toString('hex');
       const testDir = join(tmpdir(), `analytics-app-${testId}`);
       const toolResultPath = join(testDir, 'tool-result.json');
       try {
         mkdirSync(testDir, { recursive: true });
-        writeFileSync(
-          toolResultPath,
-          JSON.stringify({ toolResult: result, chartId, chartPayload: payloadText }),
-          { encoding: 'utf8', mode: 0o600 },
-        );
+        writeFileSync(toolResultPath, JSON.stringify({ toolResult: result }), {
+          encoding: 'utf8',
+          mode: 0o600,
+        });
 
         // 4. Spawn Playwright to run the browser test
         const projectRoot = process.cwd();

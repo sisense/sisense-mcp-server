@@ -77,18 +77,16 @@ HTTP request → sse-server.ts
 
 ## SessionState Key Taxonomy
 
-| Key                   | Type                                                  | Persists across conversation reset?               |
-| --------------------- | ----------------------------------------------------- | ------------------------------------------------- |
-| `sisenseUrl`          | `string`                                              | YES — credential                                  |
-| `sisenseToken`        | `string`                                              | YES — credential                                  |
-| `httpClient`          | `HttpClient`                                          | YES — credential                                  |
-| `openAIClient`        | `SessionOpenAIClient`                                 | YES — credential                                  |
-| `baseUrl`             | `string`                                              | REFRESHED — updated from request headers on reset |
-| `chart:summaries`     | `ChartSummary[]`                                      | NO — cleared on conversation reset                |
-| `chart-${id}`         | `ExtendedChartWidgetProps`                            | NO — cleared on conversation reset                |
-| `chart:payload:${id}` | `{ sisenseUrl, sisenseToken, serializedWidgetProps }` | YES — preserved for analytics app re-rendering    |
-
-**Why the split matters:** When the same user starts a new conversation (same credentials, new MCP session), `resetConversationState()` clones the state, clears the `chart:summaries` and `chart-${id}` keys so the LLM doesn't see stale context, but preserves `chart:payload:${id}` so the analytics app can still re-render charts from previous sessions.
+| Key                   | Type                                | Persists across MCP re-initialize?                                                    |
+| --------------------- | ----------------------------------- | ------------------------------------------------------------------------------------- |
+| `sisenseUrl`          | `string`                            | YES — credential                                                                      |
+| `sisenseToken`        | `string`                            | YES — credential                                                                      |
+| `httpClient`          | `HttpClient`                        | YES — credential                                                                      |
+| `openAIClient`        | `SessionOpenAIClient`               | YES — credential                                                                      |
+| `baseUrl`             | `string`                            | REFRESHED — updated from request headers on each re-init (tool-mode screenshot URLs)  |
+| `query-${id}`         | `QueryResult`                       | YES — per credential; bounded by `MCP_QUERY_CACHE_MAX_ENTRIES` (default 10)           |
+| `chart:summaries`     | `ChartSummary[]`                    | YES — shared across ChatGPT model/app sessions for same credentials                   |
+| `chart-${id}`         | `ExtendedChartWidgetProps`          | YES — key = chartId (same pattern as query cache)                                     |
 
 ---
 
@@ -128,14 +126,15 @@ These functions throw explicitly. That's intentional — a missing client is a b
 ## Pitfall: Large Payloads in `_meta` Break Clients
 
 > **Bug hit in SNS-128032**: Chart payload (serialized widget props + credentials) was returned in the `_meta` field of the tool response. Cursor and ChatGPT couldn't handle it.
+>
+> **Follow-up (SNS-129470)**: Replacing `_meta` with an MCP `ResourceTemplate` + `readServerResource()` fixed Cursor but broke ChatGPT — its MCP App host doesn't proxy `resources/read`. Claude.ai also has a dual-session issue where the Model session stores the payload but the AppBridge session can't find it.
 
-**Use MCP resources for large data.** The pattern in this repo:
+**Current pattern — inline `artifactPayload` in `structuredContent`:**
 
-1. `buildChart` stores the payload in `sessionState.set('chart:payload:${chartId}', payload)`
-2. `mcp-server.ts` registers a `ResourceTemplate` at `ui://sisense-analytics/chart/{chartId}`
-3. The analytics app fetches the resource via `resources/read`, not from `_meta`
+1. `buildChart` sets `artifactPayload: { type: 'chart', sisenseUrl, sisenseToken, serializedWidgetProps }` on `structuredContent` (not in LLM-visible `content[0].text`).
+2. The analytics app reads `toolResult.structuredContent.artifactPayload` from the postMessage `toolresult` event and renders directly — no HTTP fetch, works across ChatGPT (CSP), Claude dual-session, Goose, and Cursor.
 
-If you're tempted to put large data in `_meta`, put it in a resource instead.
+**Adding a new artifact type** (e.g. `buildDashboard`): set `artifactPayload` in the tool's `structuredContent`, add the type to the `BiArtifact` union in `analytics-app.tsx`, and handle it in `renderArtifact`.
 
 ---
 
@@ -151,10 +150,10 @@ function isMcpAppEnabled(): boolean {
 
 Feature flags are **enabled by default** (opt-out, not opt-in). Check both `'false'` and `'0'`.
 
-| Mode               | How chart is delivered                                   | Tool registered via     |
-| ------------------ | -------------------------------------------------------- | ----------------------- |
-| App mode (default) | MCP resource at `ui://sisense-analytics/chart/{chartId}` | `registerAppTool()`     |
-| Tool mode          | PNG screenshot, `imageUrl` in response                   | `server.registerTool()` |
+| Mode               | How chart is delivered                                         | Tool registered via     |
+| ------------------ | -------------------------------------------------------------- | ----------------------- |
+| App mode (default) | Inline `artifactPayload` in `structuredContent` → postMessage   | `registerAppTool()`     |
+| Tool mode          | PNG screenshot, `imageUrl` in response                         | `server.registerTool()` |
 
 When adding a new tool, decide up-front which mode applies and wire it conditionally if needed.
 
@@ -175,7 +174,7 @@ See `src/analytics-view/`.
 ## Adding a New Tool — Checklist
 
 1. **Get credentials from session** — use `getSessionHttpClient()`, `getSessionOpenAIClient()`, `getSessionSisenseUrl()`, `getSessionSisenseToken()` from `src/utils/sisense-session.ts`. Never touch globals.
-2. **Generate artifact IDs with `generateArtifactId(type)`** — not `Date.now()`, not `extra.requestId`, not session counters. Same rule applies to S3 filenames (`randomUUID()` not `Date.now()`).
+2. **Generate session artifact IDs with `generateArtifactId(type)`** — not `Date.now()`, not `extra.requestId`, not session counters. Same rule applies to S3 filenames (`randomUUID()` not `Date.now()`).
 3. **Wrap CSDK calls** in `csdkBrowserMock.withBrowserEnvironment(async () => { ... })`.
 4. **Wrap engine calls** in `runWithUserAction('MCP', 'ASSISTANT', () => ...)` for telemetry.
 5. **Sanitize errors before logging** — `console.warn(sanitizeError(err).message)`. Never log raw errors; they may contain tokens in URLs.
@@ -183,26 +182,19 @@ See `src/analytics-view/`.
 7. **Return `isError: true`** in catch blocks alongside structured content (see `buildChart` error path).
 8. **Register in `mcp-server.ts`** — add tool registration in `setupMcpServer()`.
 9. **Write unit tests** with `bun test` preload (`src/__test-helpers__/setup.ts` mocks browser globals).
-10. **Update `resetConversationState`** in `sse-server.ts` if the new tool stores per-conversation keys in session state that should be cleared on new conversations.
+10. **Query cache** — stored under `queryId` in [build-query.ts](src/tools/build-query.ts); trimmed via `trimQueryCache` in [session-query-cache.ts](src/utils/session-query-cache.ts). Do not clear on MCP re-initialize.
 
 ---
 
-## Session State Reset — What to Clear
+## Pitfall: ChatGPT multiple MCP sessions (re-initialize)
 
-When adding session state keys for a new tool, decide: is this **per-conversation** or **per-credential**?
+ChatGPT opens **several** MCP HTTP sessions per chat (model tools, MCP app iframe, `resources/read`). Each sends `initialize` without `mcp-session-id`. That is **not** a new user conversation.
 
-- **Per-conversation** (LLM context, conversation memory): clear in `resetConversationState()` in `sse-server.ts`
-- **Per-credential** (auth clients, reusable payloads for the analytics app): leave alone
+**Do not** clone/clear `persistentStates` on re-init — it breaks `buildQuery` → `buildChart` (`retrieveQuery_miss`). Re-init only calls `refreshSessionBaseUrl()` and reuses the same `SessionState` Map ([sse-server.ts](src/sse-server.ts)).
 
-Update the clear logic at [src/sse-server.ts](src/sse-server.ts) around the `resetConversationState` function. The current predicate is:
+Debug with `NODE_ENV=development` and `[mcp-session]` logs from `devDebug`. Expect `initialize_reuse` with `conversationKeys` still containing the `queryId` after `buildQuery_stored`.
 
-```ts
-if (key === 'chart:summaries' || (typeof key === 'string' && key.startsWith('chart-'))) {
-  freshState.delete(key);
-}
-```
-
-Add your new keys here if they're per-conversation.
+**Query cache size:** `MCP_QUERY_CACHE_MAX_ENTRIES` (default `10`) — oldest `query-*` keys evicted on each new `buildQuery`.
 
 ---
 

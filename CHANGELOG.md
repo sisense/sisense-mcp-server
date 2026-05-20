@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0] - 2026-05-20
+
+### Changed
+
+- Deliver chart data to the analytics app via inline `structuredContent.artifactPayload` (postMessage), replacing MCP `ResourceTemplate` + `readServerResource()`. Works across ChatGPT (no CSP fetch), Claude.ai (dual Model/AppBridge sessions), Goose, and Cursor.
+- Generalize analytics app rendering to a `BiArtifact` discriminated union (`type: 'chart' | 'dashboard'`) to support upcoming artifact types without further changes to the delivery layer.
+
 ## [0.4.1] - 2026-04-30
 
 ### Security

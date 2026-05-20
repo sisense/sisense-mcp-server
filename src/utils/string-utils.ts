@@ -215,6 +215,9 @@ export function validateUrl(
   return trimmed;
 }
 
+/** Matches IDs from `generateArtifactId('query')` (e.g. query-3f2504e0). */
+export const QUERY_ARTIFACT_ID_PATTERN = /^query-[0-9a-f]{8}$/;
+
 /**
  * Generates a short, unique ID for an artifact (chart, query, dashboard, etc.).
  * Uses the first segment of a UUID (8 hex chars) to keep IDs readable for LLMs.

@@ -14,8 +14,13 @@ import {
   getSessionSisenseToken,
   getSessionSisenseUrl,
 } from '../utils/sisense-session.js';
-import { sanitizeError, generateArtifactId } from '../utils/string-utils.js';
+import {
+  sanitizeError,
+  generateArtifactId,
+  QUERY_ARTIFACT_ID_PATTERN,
+} from '../utils/string-utils.js';
 import { getFeatureFlags, type SessionFeatureFlags } from '../utils/feature-flags.js';
+import { conversationKeys, devDebug } from '../utils/dev-debug.js';
 import { CustomSuperJSON } from '@sisense/sdk-ui/analytics-composer/node';
 
 const baseOutputSchema = z.object({
@@ -25,7 +30,9 @@ const baseOutputSchema = z.object({
   message: z.string(),
 });
 
-export const buildChartOutputSchemaAppMode = baseOutputSchema;
+export const buildChartOutputSchemaAppMode = baseOutputSchema.extend({
+  artifactPayload: z.record(z.unknown()).optional(),
+});
 
 export const buildChartOutputSchemaToolMode = baseOutputSchema.extend({
   imageUrl: z.string().optional(),
@@ -33,6 +40,25 @@ export const buildChartOutputSchemaToolMode = baseOutputSchema.extend({
 
 export function getBuildChartOutputSchema(flags: SessionFeatureFlags) {
   return flags.mcpAppEnabled ? buildChartOutputSchemaAppMode : buildChartOutputSchemaToolMode;
+}
+
+/** MCP input: opaque query ID from a prior buildQuery call in this session.
+ * TEMPORARY FIX UNTIL A FIX IS IN THE SDK-AI-CORE PACKAGE.
+ */
+export const buildChartQueryIdSchema = z
+  .string()
+  .regex(
+    QUERY_ARTIFACT_ID_PATTERN,
+    'Must be the queryId returned by buildQuery (format: query-xxxxxxxx)',
+  )
+  .optional()
+  .describe(
+    'Query ID from a prior buildQuery result in this session. Omit to let buildChart run its own query.',
+  );
+
+/** Replaces SDK nullable queryId with a typed pattern for MCP tool schemas. */
+export function withBuildChartQueryId<T extends z.ZodRawShape>(shape: T) {
+  return { ...shape, queryId: buildChartQueryIdSchema };
 }
 
 function getChartSummaries(sessionState?: SessionState): ChartSummary[] {
@@ -59,6 +85,16 @@ export async function buildChart(
 
     const toolCallId = generateArtifactId('chart');
 
+    if (queryId != null) {
+      const lookupKey = queryId;
+      devDebug('[mcp-session] buildChart_start', {
+        queryId,
+        lookupKey,
+        cacheHit: sessionState?.has(lookupKey) ?? false,
+        conversationKeys: conversationKeys(sessionState),
+      });
+    }
+
     const result = await csdkBrowserMock.withBrowserEnvironment(async () => {
       const { buildChartEngine, runWithUserAction } = await import('@sisense/sdk-ai-core');
       const { renderChartWidget } = await import('@/utils/widget-renderer/widget-renderer.js');
@@ -69,8 +105,19 @@ export async function buildChart(
         chartSummaries: getChartSummaries(sessionState),
         retrieveChart: (id) => (sessionState?.get(id) as ExtendedChartWidgetProps) ?? null,
         saveChart: (id, props) => sessionState?.set(id, props),
-        retrieveQuery: (id) => (sessionState?.get(`query-${id}`) as QueryResult) ?? null,
-        onInternalQueryResult: (result) => sessionState?.set(`query-${result.queryId}`, result),
+        retrieveQuery: (id) => {
+          const lookupKey = id;
+          const hit = (sessionState?.get(lookupKey) as QueryResult) ?? null;
+          if (!hit) {
+            devDebug('[mcp-session] retrieveQuery_miss', {
+              id,
+              lookupKey,
+              conversationKeys: conversationKeys(sessionState),
+            });
+          }
+          return hit;
+        },
+        onInternalQueryResult: (result) => sessionState?.set(result.queryId, result),
         isNlqV3Enabled: true,
         httpClient,
         openAIClient,
@@ -138,22 +185,12 @@ export async function buildChart(
 
         const serializedWidgetProps = CustomSuperJSON.serialize(savedProps);
 
+        let artifactPayload: Record<string, unknown> | undefined;
         if (mcpAppEnabled && sisenseUrl && sisenseToken) {
-          sessionState?.set(`chart:payload:${chartSummary.chartId}`, {
-            sisenseUrl,
-            sisenseToken,
-            serializedWidgetProps,
-          });
+          artifactPayload = { type: 'chart', sisenseUrl, sisenseToken, serializedWidgetProps };
         }
 
-        return {
-          chartSummary,
-          imageUrl,
-          insights,
-          sisenseUrl,
-          sisenseToken,
-          serializedWidgetProps,
-        };
+        return { chartSummary, imageUrl, insights, artifactPayload };
       }
 
       console.warn('No saved props found for chartId:', chartSummary.chartId);
@@ -161,14 +198,14 @@ export async function buildChart(
         chartSummary,
         imageUrl: undefined,
         insights: undefined,
-        sisenseUrl: undefined,
-        sisenseToken: undefined,
+        artifactPayload: undefined,
       };
     });
 
-    const { chartSummary, imageUrl, insights } = result;
+    const { chartSummary, imageUrl, insights, artifactPayload } = result;
 
-    const output: Record<string, unknown> = {
+    // LLM-visible text: no credentials, no large serialized props
+    const textOutput: Record<string, unknown> = {
       success: true,
       chartId: chartSummary.chartId,
       message: chartSummary.message || `Chart created successfully for query: "${userPrompt}"`,
@@ -176,17 +213,21 @@ export async function buildChart(
       ...(mcpAppEnabled ? {} : { imageUrl }),
     };
 
-    const finalOutput = {
+    // structuredContent adds artifactPayload for the MCP App iframe (never shown to the LLM)
+    const structuredOutput: Record<string, unknown> = {
+      ...textOutput,
+      ...(artifactPayload ? { artifactPayload } : {}),
+    };
+
+    return {
       content: [
         {
           type: 'text' as const,
-          text: JSON.stringify(output, null, 2),
+          text: JSON.stringify(textOutput, null, 2),
         },
       ],
-      structuredContent: output,
+      structuredContent: structuredOutput,
     };
-
-    return finalOutput;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 

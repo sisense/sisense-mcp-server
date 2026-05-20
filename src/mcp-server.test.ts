@@ -55,6 +55,21 @@ describe('MCP Server - Tool Registration', () => {
     expect(buildChart!.inputSchema).toBeDefined();
   });
 
+  it('buildChart inputSchema documents queryId when buildQuery is enabled', async () => {
+    process.env.TOOL_BUILD_QUERY_ENABLED = 'true';
+    const { client } = await createMockMcpFixture();
+
+    const result = await client.listTools();
+    const buildChart = result.tools.find((t) => t.name === 'sisense-build-chart');
+    const schema = buildChart!.inputSchema as {
+      properties?: { queryId?: { type?: string; pattern?: string; description?: string } };
+    };
+
+    expect(schema.properties?.queryId?.type).toBe('string');
+    expect(schema.properties?.queryId?.pattern).toBe('^query-[0-9a-f]{8}$');
+    expect(schema.properties?.queryId?.description).toContain('buildQuery');
+  });
+
   it('getDataSourceFields has inputSchema with dataSourceTitle', async () => {
     const { client } = await createMockMcpFixture();
 

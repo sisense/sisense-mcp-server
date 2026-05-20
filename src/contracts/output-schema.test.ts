@@ -62,6 +62,13 @@ describe('Output Schema Contracts', () => {
       const result = buildChartOutputSchemaAppMode.safeParse(output);
       expect(result.success).toBe(false);
     });
+
+    it('schema has artifactPayload but not artifactUrl or imageUrl', () => {
+      const shape = buildChartOutputSchemaAppMode.shape;
+      expect(shape).toHaveProperty('artifactPayload');
+      expect(shape).not.toHaveProperty('artifactUrl');
+      expect(shape).not.toHaveProperty('imageUrl');
+    });
   });
 
   describe('buildChart - Tool Mode schema', () => {
