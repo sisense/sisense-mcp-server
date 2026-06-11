@@ -29,6 +29,7 @@ A Model Context Protocol (MCP) server that provides integration with Sisense ana
 - **Bun** for running project scripts (`dev`, `build`, `start`, tests): the `bun` package is a **devDependency**, so after `npm install` or `bun install` the Bun binary is available under `node_modules/.bin`—a global Bun install is not required. A global [Bun](https://bun.sh) install is optional.
 - Sisense instance with API access
 - Sisense API token
+- **Cloud-Linked Features** enabled on your Sisense instance (and an LLM provider configured if using Bring Your Own Key (BYOK)). Required for natural-language tools such as `buildChart` and `buildQuery`. See [Generative AI (Cloud-Linked Features)](https://docs.sisense.com/main/SisenseLinux/genai.htm). This is separate from your MCP client's LLM (e.g. Claude in Cursor).
 - Playwright Chromium (installed automatically by `bun install` / `npm install` via `postinstall`)
 
 ## Installation

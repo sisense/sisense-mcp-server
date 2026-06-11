@@ -41,6 +41,7 @@ No. The server uses natural language processing. You can describe what you want 
 - Bun runtime for project scripts: the `bun` package is a dev dependency, so `npm install` or `bun install` provides the Bun binary under `node_modules/.bin`—a global Bun install is not required (optional for convenience)
 - Access to a Sisense instance
 - A valid Sisense API token
+- **Cloud-Linked Features** enabled on your Sisense instance (and an LLM provider configured if using BYOK). Required for natural-language tools such as `buildChart` and `buildQuery`. See [Generative AI (Cloud-Linked Features)](https://docs.sisense.com/main/SisenseLinux/genai.htm).
 - An MCP client (Cursor, Claude Desktop, etc.)
 
 ### How do I install the server?
@@ -74,6 +75,10 @@ SISENSE_TOKEN=your-api-token-here
 4. Copy the token to your `.env` file
 
 **Note:** Ensure your token has appropriate permissions to access data sources and create charts.
+
+### Do I need Sisense Intelligence configured?
+
+Yes. MCP uses two LLMs: your client model orchestrates tool calls; Sisense Generative AI on your instance powers NLQ chart and query generation. Enable **Cloud-Linked Features** under **Admin → Sisense Intelligence → Feature Management**, and configure a provider under **Provider Configuration** if using BYOK. See [Generative AI (Cloud-Linked Features)](https://docs.sisense.com/main/SisenseLinux/genai.htm). Without this, chart/query tools fail even with a valid API token.
 
 ## Usage
 
@@ -125,7 +130,7 @@ sisense: get fields for "Sample ECommerce"
 sisense: build chart for "Sample ECommerce" showing total revenue by month
 ```
 
-Sisense Intelligence will automatically:
+Sisense Intelligence (see [Do I need Sisense Intelligence configured?](#do-i-need-sisense-intelligence-configured)) will automatically:
 
 - Determine the appropriate chart type
 - Select relevant dimensions and measures

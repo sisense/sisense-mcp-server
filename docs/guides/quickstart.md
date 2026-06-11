@@ -10,6 +10,7 @@ title: Sisense MCP Server Quick Start Guide
 - Bun runtime for project scripts (`dev`, `build`, `start`, tests): the `bun` package is listed in `devDependencies`, so `npm install` or `bun install` places the Bun binary in `node_modules/.bin`—you do **not** need Bun installed globally. Installing [Bun](https://bun.sh) globally is optional and can be faster for everyday use.
 - Access to a Sisense instance
 - A Sisense API token
+- **Cloud-Linked Features** enabled on your Sisense instance (and an LLM provider configured if using BYOK). Required for natural-language tools such as `buildChart` and `buildQuery`. See [Generative AI (Cloud-Linked Features)](https://docs.sisense.com/main/SisenseLinux/genai.htm). This is separate from your MCP client's LLM (e.g. Claude in Cursor).
 - Playwright Chromium (installed automatically by `bun install` / `npm install` via `postinstall`)
 
 ## Clone and Install
@@ -198,6 +199,7 @@ Charts are rendered and accessible at `http://localhost:3001/screenshots/` (or i
 
 **Solution:**
 
+- If Cloud-Linked Features are not enabled or no LLM provider is configured, errors often appear when calling `buildChart` or `buildQuery`. Verify **Admin → Sisense Intelligence → Feature Management** and **Provider Configuration**. See [Generative AI (Cloud-Linked Features)](https://docs.sisense.com/main/SisenseLinux/genai.htm).
 - Verify data source name is exact (case-sensitive)
 - Check that data source has required fields
 - Try a simpler prompt first
