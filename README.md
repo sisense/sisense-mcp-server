@@ -1,5 +1,11 @@
 # Sisense MCP Server
 
+> [!WARNING]
+> **Deprecated.** This repository is no longer maintained and will be archived.
+> The Sisense MCP Server is now a hosted endpoint with OAuth 2.1, available in Sisense 2026.3.1.
+> See the [Sisense MCP Server documentation](https://docs.sisense.com/main/SisenseLinux/mcp-server.htm) to set it up.
+> This repository will not receive further features or fixes.
+
 A Model Context Protocol (MCP) server that provides integration with Sisense analytics platform. This server enables LLMs to interact with Sisense data models and create charts programmatically.
 
 ## Features
